@@ -1,0 +1,14 @@
+# activityinfo-js:
+#   filter: rjsmin
+#   output: ckanext-activityinfo/%(version)s-activityinfo.js
+#   contents:
+#     - js/activityinfo.js
+#   extra:
+#     preload:
+#       - base/main
+
+# activityinfo-css:
+#   filter: cssrewrite
+#   output: ckanext-activityinfo/%(version)s-activityinfo.css
+#   contents:
+#     - css/activityinfo.css
