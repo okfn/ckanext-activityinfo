@@ -1,4 +1,5 @@
-[![Tests](https://github.com/okfn/ckanext-activityinfo/workflows/Tests/badge.svg?branch=main)](https://github.com/okfn/ckanext-activityinfo/actions)
+[![Tests CKAN 2.10](https://github.com/okfn/ckanext-activityinfo/workflows/CKAN%202.10%20Tests/badge.svg)](https://github.com/okfn/ckanext-activityinfo/actions)
+[![Tests CKAN 2.11](https://github.com/okfn/ckanext-activityinfo/workflows/CKAN%202.11%20Tests/badge.svg)](https://github.com/okfn/ckanext-activityinfo/actions)
 
 # CKAN ActivityInfo extension
 

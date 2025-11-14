@@ -1,5 +1,5 @@
-name: Tests
-on: [push, pull_request]
+name: CKAN 2.11 Tests
+on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
