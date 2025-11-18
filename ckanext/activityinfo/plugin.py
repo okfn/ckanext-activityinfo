@@ -1,8 +1,12 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+from ckanext.activityinfo.actions import activity_info as activity_info_actions
+from ckanext.activityinfo.auth import activity_info as activity_info_auth
 
 
 class ActivityinfoPlugin(plugins.SingletonPlugin):
+    plugins.implements(plugins.IActions)
+    plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IConfigurer)
 
     # IConfigurer
@@ -11,3 +15,17 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
         toolkit.add_template_directory(config_, "templates")
         toolkit.add_public_directory(config_, "public")
         toolkit.add_resource("assets", "activityinfo")
+
+    # IActions
+
+    def get_actions(self):
+        return {
+            'act_info_get_databases': activity_info_actions.act_info_get_databases,
+        }
+
+    # IAuthFunctions
+
+    def get_auth_functions(self):
+        return {
+            'act_info_get_databases': activity_info_auth.act_info_get_databases,
+        }
