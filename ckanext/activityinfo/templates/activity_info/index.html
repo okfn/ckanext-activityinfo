@@ -1,0 +1,61 @@
+{% extends "activity_info/base.html" %}
+
+{%- block subtitle %}Activity Info{% endblock -%}
+
+{% block primary_content %}
+<div class="internal-div-section">
+<h1>Activity Info</h1>
+
+<p>CKAN users can import data from <a href="https://www.activityinfo.org">ActivityInfo</a>.</p>
+<p>To do so, you will need to access to your ActivityInfo account using your API key.</p>
+
+<p>Your API key will be used to authenticate and get your data from ActivityInfo.</p>
+
+{% set api_key = h.get_activity_info_api_key() %}
+{% if api_key %}
+  <h2>Current API key</h2>
+  {{ api_key|truncate(10) }}
+{% endif %}
+
+{% if api_key %}
+    <h2>Update API key</h2>
+{% else %}
+    <h2>Add API key</h2>
+{% endif %}
+
+<form action="{% url_for 'activity_info.update_api_key' %}" method="POST">
+  {{ h.csrf_input() }}
+  <div class="form-group control-medium">
+    <div class="controls ">
+      <input
+          type="text"
+          name="activityinfo_api_key"
+          value=""
+          placeholder="Insert your ActivityInfo API key here"
+          size="45"
+          maxlength="120"
+          class="form-control"/>
+    </div>
+  </div>
+  <div class="form-actions">
+    <input type="submit" class="btn btn-primary" value="{% if api_key %}Update{% else %}Submit{% endif %} API key" />
+  </div>
+</form>
+
+{% if api_key %}
+
+<h2>Remove API key</h2>
+
+You can also remove your API key from CKAN at any time.
+This won't remove your ActivityInfo datasets from CKAN.
+
+<form action="{% url_for 'activity_info.remove_api_key' %}" method="POST">
+  {{ h.csrf_input() }}
+  <div class="form-actions">
+    <input type="submit" class="btn btn-primary" value="Remove my API key" />
+  </div>
+</form>
+
+{% endif %}
+</div>
+{% endblock %}
