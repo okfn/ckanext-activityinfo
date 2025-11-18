@@ -6,7 +6,7 @@
 <div class="internal-div-section">
 <h1>Activity Info</h1>
 
-<p>RIDL users can import data from <a href="https://www.activityinfo.org">ActivityInfo</a>.</p>
+<p>CKAN users can import data from <a href="https://www.activityinfo.org">ActivityInfo</a>.</p>
 <p>To do so, you will need to access to your ActivityInfo account using your API key.</p>
 
 <p>Your API key will be used to authenticate and get your data from ActivityInfo.</p>
@@ -46,8 +46,8 @@
 
 <h2>Remove API key</h2>
 
-You can also remove your API key from RIDL at any time.
-This won't remove your ActivityInfo datasets from RIDL.
+You can also remove your API key from CKAN at any time.
+This won't remove your ActivityInfo datasets from CKAN.
 
 <form action="{% url_for 'activity_info.remove_api_key' %}" method="POST">
   {{ h.csrf_input() }}
