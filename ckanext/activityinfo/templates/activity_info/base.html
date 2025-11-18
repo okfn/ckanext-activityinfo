@@ -1,0 +1,22 @@
+{% extends "page.html" %}
+
+{%- block subtitle %}Activity Info{% endblock -%}
+
+{% block secondary_content %}
+  <h2 class="module-heading"><i class="fa fa-line-chart"></i> Activity Info</h2>
+  
+  <nav>
+    <ul class="unstyled nav nav-simple">
+      {% if h.get_activity_info_api_key() %}
+      <li class="nav-item">
+        <a href="#TODO" title="My databases">My databases</a>
+      </li>
+      {% else %}
+      <li class="nav-item">
+        <a href="#TODO" title="Set my ActivityInfo API key">Set my ActivityInfo API key</a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+
+{% endblock %}
