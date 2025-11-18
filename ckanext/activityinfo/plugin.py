@@ -2,12 +2,14 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.activityinfo.actions import activity_info as activity_info_actions
 from ckanext.activityinfo.auth import activity_info as activity_info_auth
+from ckanext.activityinfo import helpers
 
 
 class ActivityinfoPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IConfigurer)
+    plugins.implements(plugins.ITemplateHelpers)
 
     # IConfigurer
 
@@ -28,4 +30,12 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
     def get_auth_functions(self):
         return {
             'act_info_get_databases': activity_info_auth.act_info_get_databases,
+        }
+
+    # ITemplateHelpers
+
+    def get_helpers(self):
+        return {
+            'get_activity_info_api_key': helpers.get_activity_info_api_key,
+            
         }
