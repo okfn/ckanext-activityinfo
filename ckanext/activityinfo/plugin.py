@@ -1,9 +1,9 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+from ckanext.activityinfo import helpers
 from ckanext.activityinfo.actions import activity_info as activity_info_actions
 from ckanext.activityinfo.auth import activity_info as activity_info_auth
-from ckanext.activityinfo import blueprints
-from ckanext.activityinfo import helpers
+from ckanext.activityinfo.blueprints import activity_info as activity_info_bp
 
 
 class ActivityinfoPlugin(plugins.SingletonPlugin):
@@ -45,5 +45,5 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
 
     def get_blueprint(self):
         return [
-            blueprints.activity_info.activityinfo_bp,
+            activity_info_bp.activityinfo_bp
         ]

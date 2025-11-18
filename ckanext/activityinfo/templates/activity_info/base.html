@@ -13,7 +13,7 @@
       </li>
       {% else %}
       <li class="nav-item">
-        <a href="#TODO" title="Set my ActivityInfo API key">Set my ActivityInfo API key</a>
+        <a href="{% url_for 'activity_info.index' %}" title="Set my ActivityInfo API key">Set my ActivityInfo API key</a>
       </li>
       {% endif %}
     </ul>

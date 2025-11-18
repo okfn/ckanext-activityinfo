@@ -19,8 +19,11 @@ def get_user_token(user_id):
         log.error(f"User {user_id} not found")
         return None
 
-    if 'activity_info' not in user.plugin_extras:
+    if not user.get('plugin_extras'):
+        log.error(f"No plugin extras found for user {user_id}")
+        return None
+    if 'activity_info' not in user['plugin_extras']:
         log.error(f"No ActivityInfo plugin extras found for user {user_id}")
         return None
 
-    return user.plugin_extras.get('activity_info').get('api_key')
+    return user['plugin_extras'].get('activity_info').get('api_key')
