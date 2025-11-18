@@ -9,7 +9,10 @@
     <ul class="unstyled nav nav-simple">
       {% if h.get_activity_info_api_key() %}
       <li class="nav-item">
-        <a href="#TODO" title="My databases">My databases</a>
+        <a href="{% url_for 'activity_info.databases' %}" title="My databases">My databases</a>
+      </li>
+      <li class="nav-item">
+        <a href="{% url_for 'activity_info.index' %}" title="Change my ActivityInfo API key">Change my ActivityInfo API key</a>
       </li>
       {% else %}
       <li class="nav-item">

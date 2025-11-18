@@ -1,0 +1,26 @@
+{% extends "activity_info/base.html" %}
+
+{%- block subtitle %}Activity Info databases{% endblock -%}
+
+{% block primary_content %}
+<div class="internal-div-section">
+<h1>Activity Info databases</h1>
+
+<table id="activity-info-databases-list-table" class="table table-header table-hover table-bordered table-responsive">
+<thead>
+    <tr>
+    <th class="col-md-3">Database</th>
+    <th class="col-md-1">Description</th>
+    </tr>
+</thead>
+<tbody>
+{% for database in databases %}
+<tr>
+    <td>{{ database.label }}</td>
+    <td>{{ database.description }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+{% endblock %}

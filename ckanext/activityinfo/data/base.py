@@ -26,5 +26,21 @@ class ActivityInfoClient:
         return response.json()
 
     def get_databases(self):
-        """Fetch the list of databases for the authenticated user."""
+        """ Fetch the list of databases for the authenticated user.
+        Returns:
+            A list of databases.
+        Reponse sample:
+        [
+          {
+          'databaseId': 'cqvxxxxxx',
+          'label': 'Some DB',
+          'description': '',
+          'ownerId': '2132xxxxx',
+          'billingAccountId': 5682xxxxx,
+          'suspended': False,
+          'publishedTemplate': False,
+          'languages': []
+          }
+        ]
+        """
         return self.get("resources/databases")

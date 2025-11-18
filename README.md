@@ -36,6 +36,19 @@ Also, add `activityinfo` to the `ckan.plugins` setting in your CKAN config file.
 
 None at present
 
+## Get you ActivityInfo data
+
+### ActivityInfo API Key
+
+Log in to your ActivityInfo account and generate an API key:
+Go to _Account settings_ -> _API Tokens_ -> _add_.  
+Then define a label and the access level (Read or Read/Write) and click on "Generate".  
+
+![Generate API key](/extras/imgs/activityinfo-token-generation.png)
+
+### Get your ActivityInfo databases
+
+
 ## License
 
 [AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)

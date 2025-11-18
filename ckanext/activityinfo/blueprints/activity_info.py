@@ -1,6 +1,7 @@
 import logging
 from flask import Blueprint
 from ckan.plugins import toolkit
+from ckanext.activityinfo.exceptions import ActivityInfoConnectionError
 
 
 log = logging.getLogger(__name__)
@@ -11,6 +12,26 @@ activityinfo_bp = Blueprint('activity_info', __name__, url_prefix='/activity-inf
 def index():
     extra_vars = {}
     return toolkit.render('activity_info/index.html', extra_vars)
+
+
+@activityinfo_bp.route('/databases')
+def databases():
+    try:
+        ai_databases = toolkit.get_action('act_info_get_databases')(
+            context={'user': toolkit.c.user},
+            data_dict={}
+        )
+    except ActivityInfoConnectionError as e:
+        message = f"Could not retrieve ActivityInfo databases: {e}"
+        log.error(message)
+        toolkit.h.flash_error(message)
+        return toolkit.redirect_to('activity_info.index')
+
+    log.info(f"Retrieved {ai_databases}")
+    extra_vars = {
+        'databases': ai_databases,
+    }
+    return toolkit.render('activity_info/databases.html', extra_vars)
 
 
 @activityinfo_bp.route('/update-api-key', methods=['POST'])
