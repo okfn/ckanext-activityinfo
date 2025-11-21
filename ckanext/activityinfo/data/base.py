@@ -1,12 +1,24 @@
+import logging
+from pathlib import Path
 import requests
+
+
+log = logging.getLogger(__name__)
 
 
 class ActivityInfoClient:
     """Base class for ActivityInfo API client."""
 
-    def __init__(self, base_url="https://www.activityinfo.org", api_key=None):
+    def __init__(self, base_url="https://www.activityinfo.org", api_key=None, debug=True):
         self.base_url = base_url
         self.api_key = api_key
+        self.debug = debug
+        self.responses_debug_dir = None
+        if self.debug:
+            here = Path(__file__).parent
+            self.responses_debug_dir = here / "responses_debug_dir"
+            self.responses_debug_dir.mkdir(exist_ok=True)
+        log.debug(f"ActivityInfoClient initialized with base_url: {self.base_url}, debug: {self.debug}")
 
     def get_user_auth_headers(self):
         """
@@ -19,62 +31,48 @@ class ActivityInfoClient:
 
     def get(self, endpoint, params=None):
         """Make a GET request to the ActivityInfo API."""
+        log.info(f"ActivityInfoClient Making GET request to {endpoint}")
         headers = self.get_user_auth_headers()
         url = f"{self.base_url}/{endpoint}"
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
+        log.info(f"ActivityInfoClient GET request to {endpoint} completed")
+        if self.debug:
+            # create all folders in path
+            Path(self.responses_debug_dir / endpoint).mkdir(parents=True, exist_ok=True)
+            with open(self.responses_debug_dir / endpoint / "response.json", "w") as f:
+                f.write(response.text)
         return response.json()
 
     def get_databases(self):
         """ Fetch the list of databases for the authenticated user.
+        Docs: https://www.activityinfo.org/support/docs/api/reference/getDatabases.html
         Returns:
             A list of databases.
-        Reponse sample:
-        [
-          {
-          'databaseId': 'cqvxxxxxx',
-          'label': 'Some DB',
-          'description': '',
-          'ownerId': '2132xxxxx',
-          'billingAccountId': 5682xxxxx,
-          'suspended': False,
-          'publishedTemplate': False,
-          'languages': []
-          }
-        ]
+        Reponse sample: see ckanext/activityinfo/data/samples/databases.json
         """
         return self.get("resources/databases")
 
     def get_database(self, database_id):
         """ Fetch the details of a specific database.
+        Docs: https://www.activityinfo.org/support/docs/api/reference/getDatabaseTree.html
         Args:
             database_id (str): The ID of the database to fetch.
         Returns:
             A dictionary containing the details of the database.
+            This include resources by types: DATABASE, FOLDER, REPORT, FORM and SUB_FORM
+        Response sample: see ckanext/activityinfo/data/samples/database.json
         """
         return self.get(f"resources/databases/{database_id}")
 
     def get_forms(self, database_id):
         """ Fetch the list of forms for a specific database.
-        Args:
-            database_id (str): The ID of the database to fetch forms for.
-        Returns:
-            A list of forms.
-        Reponse sample:
-        [
-          {
-          'formId': 'cqvxxxxxx',
-          'label': 'Some Form',
-          'description': '',
-          'ownerId': '2132xxxxx',
-          'billingAccountId': 5682xxxxx,
-          'suspended': False,
-          'publishedTemplate': False,
-          'languages': []
-          }
-        ]
+        There is not direct API endpoint
+        We get the database nad the resources -> list -> filter type=FORM
         """
-        return self.get(f"resources/databases/{database_id}/forms")
+        database = self.get_database(database_id)
+        forms = [resource for resource in database["resources"] if resource["type"] == "FORM"]
+        return forms
 
     def get_form(self, database_id, form_id):
         """ Fetch the details of a specific form.
@@ -85,61 +83,3 @@ class ActivityInfoClient:
             A dictionary containing the details of the form.
         """
         return self.get(f"resources/databases/{database_id}/forms/{form_id}")
-
-    def get_form_fields(self, database_id, form_id):
-        """ Fetch the list of fields for a specific form.
-        Args:
-            database_id (str): The ID of the database to fetch forms for.
-            form_id (str): The ID of the form to fetch fields for.
-        Returns:
-            A list of fields.
-        Reponse sample:
-        [
-          {
-          'fieldId': 'cqvxxxxxx',
-          'label': 'Some Field',
-          'description': '',
-          'ownerId': '2132xxxxx',
-          'billingAccountId': 5682xxxxx,
-          'suspended': False,
-          'publishedTemplate': False,
-          'languages': []
-          }
-        ]
-        """
-        return self.get(f"resources/databases/{database_id}/forms/{form_id}/fields")
-
-    def get_form_field(self, database_id, form_id, field_id):
-        """ Fetch the details of a specific field.
-        Args:
-            database_id (str): The ID of the database to fetch forms for.
-            form_id (str): The ID of the form to fetch fields for.
-            field_id (str): The ID of the field to fetch.
-        Returns:
-            A dictionary containing the details of the field.
-        """
-        return self.get(f"resources/databases/{database_id}/forms/{form_id}/fields/{field_id}")
-
-    def get_form_field_values(self, database_id, form_id, field_id):
-        """ Fetch the list of values for a specific field.
-        Args:
-            database_id (str): The ID of the database to fetch forms for.
-            form_id (str): The ID of the form to fetch fields for.
-            field_id (str): The ID of the field to fetch values for.
-        Returns:
-            A list of values.
-        Reponse sample:
-        [
-          {
-          'fieldId': 'cqvxxxxxx',
-          'label': 'Some Field',
-          'description': '',
-          'ownerId': '2132xxxxx',
-          'billingAccountId': 5682xxxxx,
-          'suspended': False,
-          'publishedTemplate': False,
-          'languages': []
-          }
-        ]
-        """
-        return self.get(f"resources/databases/{database_id}/forms/{form_id}/fields/{field_id}/values")
