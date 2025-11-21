@@ -44,10 +44,14 @@ def act_info_get_forms(context, data_dict):
     token = get_user_token(user)
     aic = ActivityInfoClient(api_key=token)
     try:
-        forms = aic.get_forms(database_id)
+        data = aic.get_forms(database_id, include_db_data=True)
     except HTTPError as e:
         error = f"Error retrieving forms for database {database_id} and user {user}: {e}"
         log.error(error)
         raise ActivityInfoConnectionError(error)
 
-    return forms
+    ret = {
+        'forms': data['forms'],
+        'database': data['database']
+    }
+    return ret

@@ -37,7 +37,7 @@ def databases():
 @activityinfo_bp.route('/databases/<database_id>/forms')
 def forms(database_id):
     try:
-        ai_forms = toolkit.get_action('act_info_get_forms')(
+        data = toolkit.get_action('act_info_get_forms')(
             context={'user': toolkit.c.user},
             data_dict={'database_id': database_id}
         )
@@ -47,10 +47,11 @@ def forms(database_id):
         toolkit.h.flash_error(message)
         return toolkit.redirect_to('activity_info.databases')
 
-    log.info(f"Retrieved {ai_forms}")
+    log.info(f"Retrieved {data}")
     extra_vars = {
-        'forms': ai_forms,
+        'forms': data['forms'],
         'database_id': database_id,
+        'database': data['database'],
     }
     return toolkit.render('activity_info/forms.html', extra_vars)
 
