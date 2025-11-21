@@ -4,23 +4,31 @@
 
 {% block primary_content %}
 <div class="internal-div-section">
-<h1>Activity Info databases</h1>
+    <h1>Activity Info databases</h1>
 
-<table id="activity-info-databases-list-table" class="table table-header table-hover table-bordered table-responsive">
-<thead>
-    <tr>
-    <th class="col-md-3">Database</th>
-    <th class="col-md-1">Description</th>
-    </tr>
-</thead>
-<tbody>
-{% for database in databases %}
-<tr>
-    <td>{{ database.label }}</td>
-    <td>{{ database.description }}</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
+    <table id="activity-info-databases-list-table"
+        class="table table-header table-hover table-bordered table-responsive">
+        <thead>
+            <tr>
+                <th class="col-md-3">Database</th>
+                <th class="col-md-1">Description</th>
+                <th class="col-md-1">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for database in databases %}
+            <tr>
+                <td>{{ database.label }}</td>
+                <td>{{ database.description }}</td>
+                <td>
+                    <a class="btn btn-primary"
+                        href="{{ h.url_for('activity_info.forms', database_id=database.databaseId) }}">
+                        Get Forms
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-{% endblock %}
+    {% endblock %}

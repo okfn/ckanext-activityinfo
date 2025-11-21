@@ -28,3 +28,26 @@ def act_info_get_databases(context, data_dict):
         raise ActivityInfoConnectionError(error)
 
     return databases
+
+
+def act_info_get_forms(context, data_dict):
+    '''
+    Action function to get ActivityInfo forms for a database.
+    '''
+    toolkit.check_access('act_info_get_forms', context, data_dict)
+    user = context.get('user')
+    database_id = data_dict.get('database_id')
+    if not database_id:
+        raise toolkit.ValidationError({'database_id': 'Missing value'})
+
+    log.debug(f"Getting ActivityInfo forms for database {database_id} and user {user}")
+    token = get_user_token(user)
+    aic = ActivityInfoClient(api_key=token)
+    try:
+        forms = aic.get_forms(database_id)
+    except HTTPError as e:
+        error = f"Error retrieving forms for database {database_id} and user {user}: {e}"
+        log.error(error)
+        raise ActivityInfoConnectionError(error)
+
+    return forms

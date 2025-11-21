@@ -25,6 +25,7 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
     def get_actions(self):
         return {
             'act_info_get_databases': activity_info_actions.act_info_get_databases,
+            'act_info_get_forms': activity_info_actions.act_info_get_forms,
         }
 
     # IAuthFunctions
@@ -32,6 +33,7 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
     def get_auth_functions(self):
         return {
             'act_info_get_databases': activity_info_auth.act_info_get_databases,
+            'act_info_get_forms': activity_info_auth.act_info_get_forms,
         }
 
     # ITemplateHelpers

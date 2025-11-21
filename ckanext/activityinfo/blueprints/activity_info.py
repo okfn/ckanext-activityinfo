@@ -34,6 +34,27 @@ def databases():
     return toolkit.render('activity_info/databases.html', extra_vars)
 
 
+@activityinfo_bp.route('/databases/<database_id>/forms')
+def forms(database_id):
+    try:
+        ai_forms = toolkit.get_action('act_info_get_forms')(
+            context={'user': toolkit.c.user},
+            data_dict={'database_id': database_id}
+        )
+    except (ActivityInfoConnectionError, toolkit.ValidationError) as e:
+        message = f"Could not retrieve ActivityInfo forms: {e}"
+        log.error(message)
+        toolkit.h.flash_error(message)
+        return toolkit.redirect_to('activity_info.databases')
+
+    log.info(f"Retrieved {ai_forms}")
+    extra_vars = {
+        'forms': ai_forms,
+        'database_id': database_id,
+    }
+    return toolkit.render('activity_info/forms.html', extra_vars)
+
+
 @activityinfo_bp.route('/update-api-key', methods=['POST'])
 def update_api_key():
     """Create or update the current ActivityInfo API key for the logged-in user."""
