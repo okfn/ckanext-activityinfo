@@ -12,6 +12,8 @@
             <tr>
                 <th class="col-md-3">Database</th>
                 <th class="col-md-1">Description</th>
+                <th class="col-md-1">Suspended</th>
+                <th class="col-md-1">Languages</th>
                 <th class="col-md-1">Actions</th>
             </tr>
         </thead>
@@ -20,6 +22,18 @@
             <tr>
                 <td>{{ database.label }}</td>
                 <td>{{ database.description }}</td>
+                <td>
+                    {% if database.suspended %}
+                    <span class="label label-danger">Suspended</span>
+                    {% else %}
+                    <span class="label label-primary">Active</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% for language in database.languages %}
+                    {{ language }}
+                    {% endfor %}
+                </td>
                 <td>
                     <a class="btn btn-primary"
                         href="{{ h.url_for('activity_info.forms', database_id=database.databaseId) }}">
