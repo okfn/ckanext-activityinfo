@@ -1,0 +1,381 @@
+{
+    "databaseId": "xxxxxxxxxxxxxxxx",
+    "userId": "yyyyyyyyyyyyyyyyyy",
+    "version": "3#1",
+    "label": "Some-label",
+    "description": "",
+    "ownerRef": {
+        "id": "999999999",
+        "name": "Juan Quinteros",
+        "email": "juan.quinteros@example.org"
+    },
+    "billingAccountId": 8888888888888888,
+    "language": "",
+    "originalLanguage": "",
+    "languages": [],
+    "role": {
+        "id": "admin",
+        "parameters": {},
+        "resources": []
+    },
+    "suspended": false,
+    "billingPlan": "",
+    "storage": "",
+    "publishedTemplate": false,
+    "resources": [
+        {
+            "id": "ffffffffffffffffffffff",
+            "parentId": "xxxxxxxxxxxxxxxx",
+            "label": "Some-label Form",
+            "type": "FORM",
+            "visibility": "PRIVATE"
+        }
+    ],
+    "grants": [
+        {
+            "resourceId": "xxxxxxxxxxxxxxxx",
+            "optional": false,
+            "operations": [
+                {
+                    "operation": "VIEW",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "EXPORT_RECORDS",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "DELETE_RESOURCE",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "EDIT_RESOURCE",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "MANAGE_USERS",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "DELETE_RECORD",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "VIEW_FIELD",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "MANAGE_ROLES",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "DISCOVER",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "BULK_DELETE",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "AUDIT",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "MANAGE_COLLECTION_LINKS",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "LOCK_RECORDS",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "PUBLISH_REPORTS",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "MANAGE_TRANSLATIONS",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "RESOLVE_DUPLICATES",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "SHARE_VIEWS",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "EDIT_RECORD",
+                    "filter": null,
+                    "securityCategories": [
+                        "reviewer"
+                    ]
+                },
+                {
+                    "operation": "MANAGE_IMPORT_CONFIGS",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "ADD_RESOURCE",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "MANAGE_AUTOMATIONS",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "EDIT_FIELD",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "ADD_RECORD",
+                    "filter": null,
+                    "securityCategories": []
+                }
+            ],
+            "conditions": []
+        }
+    ],
+    "locks": [],
+    "roles": [
+        {
+            "id": "dataentry",
+            "label": "Data Entry",
+            "permissions": [],
+            "parameters": [],
+            "filters": [],
+            "grants": [
+                {
+                    "resourceId": "xxxxxxxxxxxxxxxx",
+                    "optional": false,
+                    "operations": [
+                        {
+                            "operation": "VIEW",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "DISCOVER",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "EDIT_RECORD",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "ADD_RECORD",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "DELETE_RECORD",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "EXPORT_RECORDS",
+                            "filter": null,
+                            "securityCategories": []
+                        }
+                    ],
+                    "conditions": []
+                }
+            ],
+            "version": 0,
+            "grantBased": true
+        },
+        {
+            "id": "readonly",
+            "label": "Read only",
+            "permissions": [],
+            "parameters": [],
+            "filters": [],
+            "grants": [
+                {
+                    "resourceId": "xxxxxxxxxxxxxxxx",
+                    "optional": false,
+                    "operations": [
+                        {
+                            "operation": "VIEW",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "DISCOVER",
+                            "filter": null,
+                            "securityCategories": []
+                        }
+                    ],
+                    "conditions": []
+                }
+            ],
+            "version": 0,
+            "grantBased": true
+        },
+        {
+            "id": "admin",
+            "label": "Administrator",
+            "permissions": [
+                {
+                    "operation": "MANAGE_USERS",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "MANAGE_ROLES",
+                    "filter": null,
+                    "securityCategories": []
+                },
+                {
+                    "operation": "MANAGE_AUTOMATIONS",
+                    "filter": null,
+                    "securityCategories": []
+                }
+            ],
+            "parameters": [],
+            "filters": [],
+            "grants": [
+                {
+                    "resourceId": "xxxxxxxxxxxxxxxx",
+                    "optional": false,
+                    "operations": [
+                        {
+                            "operation": "VIEW",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "DISCOVER",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "ADD_RECORD",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "EDIT_RECORD",
+                            "filter": null,
+                            "securityCategories": [
+                                "reviewer"
+                            ]
+                        },
+                        {
+                            "operation": "DELETE_RECORD",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "BULK_DELETE",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "EXPORT_RECORDS",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "LOCK_RECORDS",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "ADD_RESOURCE",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "EDIT_RESOURCE",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "DELETE_RESOURCE",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "MANAGE_COLLECTION_LINKS",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "AUDIT",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "PUBLISH_REPORTS",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "MANAGE_TRANSLATIONS",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "RESOLVE_DUPLICATES",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "SHARE_VIEWS",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "MANAGE_IMPORT_CONFIGS",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "VIEW_FIELD",
+                            "filter": null,
+                            "securityCategories": []
+                        },
+                        {
+                            "operation": "EDIT_FIELD",
+                            "filter": null,
+                            "securityCategories": []
+                        }
+                    ],
+                    "conditions": []
+                }
+            ],
+            "version": 0,
+            "grantBased": true
+        }
+    ],
+    "securityCategories": [
+        {
+            "id": "reviewer",
+            "label": "Reviewer only"
+        }
+    ]
+}
