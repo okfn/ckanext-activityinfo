@@ -62,7 +62,7 @@ def test_get_databases(requests_mock_fixture, client):
 
 def test_get_database(requests_mock_fixture, client):
     db_id = "db1"
-    url = f"https://www.activityinfo.org/resources/databases/{db_id}"
+    url = f"https://www.activityinfo.org/resources/database/{db_id}"
     fake_response = {"databaseId": db_id, "resources": []}
     requests_mock_fixture.get(url, json=fake_response)
     result = client.get_database(db_id)
@@ -71,7 +71,7 @@ def test_get_database(requests_mock_fixture, client):
 
 def test_get_forms(requests_mock_fixture, client):
     db_id = "db1"
-    url = f"https://www.activityinfo.org/resources/databases/{db_id}"
+    url = f"https://www.activityinfo.org/resources/database/{db_id}"
     fake_response = {
         "databaseId": db_id,
         "resources": [
@@ -91,7 +91,7 @@ def test_get_forms(requests_mock_fixture, client):
 def test_get_form(requests_mock_fixture, client):
     db_id = "db1"
     form_id = "f1"
-    url = f"https://www.activityinfo.org/resources/databases/{db_id}/forms/{form_id}"
+    url = f"https://www.activityinfo.org/resources/database/{db_id}/forms/{form_id}"
     fake_response = {"id": form_id, "fields": []}
     requests_mock_fixture.get(url, json=fake_response)
     result = client.get_form(db_id, form_id)

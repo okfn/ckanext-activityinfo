@@ -26,6 +26,7 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
         return {
             'act_info_get_databases': activity_info_actions.act_info_get_databases,
             'act_info_get_forms': activity_info_actions.act_info_get_forms,
+            'act_info_get_form': activity_info_actions.act_info_get_form,
         }
 
     # IAuthFunctions
@@ -34,6 +35,7 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
         return {
             'act_info_get_databases': activity_info_auth.act_info_get_databases,
             'act_info_get_forms': activity_info_auth.act_info_get_forms,
+            'act_info_get_form': activity_info_auth.act_info_get_form,
         }
 
     # ITemplateHelpers

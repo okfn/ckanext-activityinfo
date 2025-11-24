@@ -55,3 +55,29 @@ def act_info_get_forms(context, data_dict):
         'database': data['database']
     }
     return ret
+
+
+def act_info_get_form(context, data_dict):
+    '''
+    Action function to get a specific ActivityInfo form.
+    '''
+    toolkit.check_access('act_info_get_form', context, data_dict)
+    user = context.get('user')
+    database_id = data_dict.get('database_id')
+    form_id = data_dict.get('form_id')
+    if not database_id:
+        raise toolkit.ValidationError({'database_id': 'Missing value'})
+    if not form_id:
+        raise toolkit.ValidationError({'form_id': 'Missing value'})
+
+    log.debug(f"Getting ActivityInfo form {form_id} for database {database_id} and user {user}")
+    token = get_user_token(user)
+    aic = ActivityInfoClient(api_key=token)
+    try:
+        form = aic.get_form(database_id, form_id)
+    except HTTPError as e:
+        error = f"Error retrieving form {form_id} for database {database_id} and user {user}: {e}"
+        log.error(error)
+        raise ActivityInfoConnectionError(error)
+
+    return form
