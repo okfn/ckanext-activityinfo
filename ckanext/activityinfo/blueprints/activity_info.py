@@ -74,8 +74,9 @@ def update_api_key():
     activity_info_extras = plugin_extras.get('activity_info', {})
     activity_info_extras['api_key'] = api_key
     plugin_extras['activity_info'] = activity_info_extras
+    site_user = toolkit.get_action("get_site_user")({"ignore_auth": True}, {})
     toolkit.get_action('user_patch')(
-        context={'user': toolkit.c.user},
+        context={'user': site_user['name']},
         data_dict={
             'id': toolkit.c.user,
             'plugin_extras': plugin_extras
@@ -96,8 +97,9 @@ def remove_api_key():
     activity_info_extras = plugin_extras.get('activity_info', {})
     activity_info_extras.pop('api_key', None)
     plugin_extras['activity_info'] = activity_info_extras
+    site_user = toolkit.get_action("get_site_user")({"ignore_auth": True}, {})
     toolkit.get_action('user_patch')(
-        context={'user': toolkit.c.user},
+        context={'user': site_user['name']},
         data_dict={
             'id': toolkit.c.user,
             'plugin_extras': plugin_extras
