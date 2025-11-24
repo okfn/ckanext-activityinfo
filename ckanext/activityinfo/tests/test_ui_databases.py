@@ -40,8 +40,8 @@ class TestDatabasesView:
             url = toolkit.url_for("activity_info.databases")
             resp = app.get(url, headers=environ)
             assert resp.status_code == 200
-            assert "Database label 01" in resp.text
-            assert "Database label 02" in resp.text
+            assert "Database label 01" in resp.body
+            assert "Database label 02" in resp.body
 
     def test_databases_no_api_key_user(self, app):
         user = ckan_factories.UserWithToken()
