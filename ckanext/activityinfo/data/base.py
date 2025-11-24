@@ -41,7 +41,7 @@ class ActivityInfoClient:
             # create all folders in path
             Path(self.responses_debug_dir / endpoint).mkdir(parents=True, exist_ok=True)
             with open(self.responses_debug_dir / endpoint / "response.json", "w") as f:
-                f.write(response.body)
+                f.write(response.text)
         return response.json()
 
     def get_databases(self):
