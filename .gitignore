@@ -1,13 +1,8 @@
-.ropeproject
-node_modules
-bower_components
+ckanext/activityinfo/data/responses_debug_dir
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-
-# C extensions
-*.so
 
 # Distribution / packaging
 .Python

@@ -1,0 +1,12 @@
+[
+    {
+        "databaseId": "xxxxxxxxxxxxxxxx",
+        "label": "Some-label",
+        "description": "",
+        "ownerId": "999999999",
+        "billingAccountId": 8888888888888888,
+        "suspended": false,
+        "publishedTemplate": false,
+        "languages": []
+    }
+]
