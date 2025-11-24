@@ -11,9 +11,6 @@ class TestRemoveApiKey:
         environ = {"Authorization": ai_user_with_api_key["token"]}
         url = toolkit.url_for("activity_info.remove_api_key")
         resp = app.post(url, headers=environ)
-        f = open('p0.html', 'w')
-        f.write(resp.body)
-        f.close()
         assert resp.status_code == 200
         assert "ActivityInfo API key removed successfully" in resp.body
 
