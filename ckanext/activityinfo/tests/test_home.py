@@ -10,7 +10,7 @@ def setup_data():
     obj = SimpleNamespace()
     # Create CKAN users
     obj.activityinfo_user = factories.ActivityInfoUser()
-    obj.regular_user = ckan_factories.User()
+    obj.regular_user = ckan_factories.UserWithToken()
 
     return obj
 
@@ -18,12 +18,12 @@ def setup_data():
 @pytest.mark.usefixtures("with_plugins", "clean_db")
 class TestActivityInfoUI:
     def test_regular_user(self, app, setup_data):
-        environ = {"Authorization": setup_data.activityinfo_user["token"]}
+        environ = {"Authorization": setup_data.regular_user["token"]}
 
         resp = app.get("/activity-info", headers=environ)
         assert resp.status_code == 200
         # CKAN users without a registered ActivityInfo token, will be asked to add one
-        # TODO
+        assert "Add API key" in resp.text
 
     def test_activityinfo_user(self, app, setup_data):
         environ = {"Authorization": setup_data.activityinfo_user["token"]}
@@ -31,4 +31,4 @@ class TestActivityInfoUI:
         resp = app.get("/activity-info", headers=environ)
         assert resp.status_code == 200
         # Activity info users will see the ActivityInfo UI
-        # TODO
+        assert "Update API key" in resp.text

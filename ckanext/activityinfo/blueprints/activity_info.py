@@ -1,7 +1,9 @@
 import logging
 from flask import Blueprint
+from ckan.common import current_user
 from ckan.plugins import toolkit
 from ckanext.activityinfo.exceptions import ActivityInfoConnectionError
+from ckanext.activityinfo.utils import get_activity_info_user_plugin_extras, get_user_token
 
 
 log = logging.getLogger(__name__)
@@ -10,7 +12,9 @@ activityinfo_bp = Blueprint('activity_info', __name__, url_prefix='/activity-inf
 
 @activityinfo_bp.route('/')
 def index():
-    extra_vars = {}
+    extra_vars = {
+        'api_key': get_user_token(current_user.name),
+    }
     return toolkit.render('activity_info/index.html', extra_vars)
 
 
@@ -66,13 +70,7 @@ def update_api_key():
         toolkit.h.flash_error(message)
         return toolkit.redirect_to('activity_info.index')
 
-    user_dict = toolkit.get_action('user_show')(
-        context={'ignore_auth': True},
-        data_dict={'id': toolkit.c.user, 'include_plugin_extras': True}
-    )
-    plugin_extras = user_dict.get('plugin_extras')
-    if not plugin_extras:
-        plugin_extras = {}
+    plugin_extras = get_activity_info_user_plugin_extras(toolkit.c.user) or {}
     activity_info_extras = plugin_extras.get('activity_info', {})
     activity_info_extras['api_key'] = api_key
     plugin_extras['activity_info'] = activity_info_extras
@@ -90,11 +88,7 @@ def update_api_key():
 @activityinfo_bp.route('/remove-api-key', methods=['POST'])
 def remove_api_key():
     """Remove the current ActivityInfo API key for the logged-in user."""
-    user_dict = toolkit.get_action('user_show')(
-        context={'ignore_auth': True},
-        data_dict={'id': toolkit.c.user, 'include_plugin_extras': True}
-    )
-    plugin_extras = user_dict.get('plugin_extras')
+    plugin_extras = get_activity_info_user_plugin_extras(toolkit.c.user) or {}
     if not plugin_extras or 'activity_info' not in plugin_extras:
         toolkit.h.flash_error('No ActivityInfo API key found to remove.')
         return toolkit.redirect_to('activity_info.index')
