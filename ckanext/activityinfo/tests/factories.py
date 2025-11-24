@@ -1,4 +1,5 @@
 from ckantoolkit.tests import factories
+import factory
 
 
 def _generate_plugin_extras(user):
