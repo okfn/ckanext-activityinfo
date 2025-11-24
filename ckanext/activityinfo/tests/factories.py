@@ -3,7 +3,7 @@ import factory
 
 
 def _generate_plugin_extras(user):
-    plugin_extras = {'activity_info': {'api_key': "test_api_key_{}".format(user.name)}}
+    plugin_extras = {'activity_info': {'api_key': "api_key_{}".format(user.name)}}
     return plugin_extras
 
 
