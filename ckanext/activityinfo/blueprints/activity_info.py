@@ -63,7 +63,7 @@ def forms(database_id):
 @activityinfo_bp.route('/database/<database_id>/form/<form_id>')
 def form(database_id, form_id):
     try:
-        data = toolkit.get_action('act_info_get_form_details')(
+        data = toolkit.get_action('act_info_get_form')(
             context={'user': toolkit.c.user},
             data_dict={
                 'database_id': database_id,
@@ -77,10 +77,15 @@ def form(database_id, form_id):
         return toolkit.redirect_to('activity_info.forms', database_id=database_id)
 
     log.info(f"Retrieved {data}")
+    form = data['forms'][form_id]
+    schema = form.get('schema', {})
+    fields = schema.get('elements', {})
     extra_vars = {
-        'form': data['form'],
-        'database_id': database_id,
-        'database': data['database'],
+        'data': data,
+        'form': form,
+        'database_id': schema['databaseId'],
+        'database': {'label': 'Test DB'},
+        'fields': fields,
     }
     return toolkit.render('activity_info/form_details.html', extra_vars)
 
