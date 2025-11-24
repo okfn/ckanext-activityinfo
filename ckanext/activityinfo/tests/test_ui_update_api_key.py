@@ -1,18 +1,11 @@
 import pytest
 from ckan.plugins import toolkit
-from ckanext.activityinfo.tests import factories
-
-
-@pytest.fixture
-def user_with_api_key():
-    """A CKAN user with an existing ActivityInfo API key."""
-    return factories.ActivityInfoUser()
 
 
 @pytest.mark.usefixtures("clean_db")
 class TestUpdateApiKey:
-    def test_update_api_key_success(self, app, user_with_api_key):
-        environ = {"Authorization": user_with_api_key["token"]}
+    def test_update_api_key_success(self, app, ai_user_with_api_key):
+        environ = {"Authorization": ai_user_with_api_key["token"]}
         new_api_key = "new-activityinfo-api-key"
 
         url = toolkit.url_for("activity_info.update_api_key")

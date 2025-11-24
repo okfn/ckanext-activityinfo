@@ -3,15 +3,10 @@ from ckan.plugins import toolkit
 from ckantoolkit.tests import factories as ckan_factories
 
 
-@pytest.fixture
-def user_no_api_key():
-    """A CKAN user without an ActivityInfo API key."""
-    return ckan_factories.UserWithToken()
-
-
 @pytest.mark.usefixtures("clean_db")
 class TestCreateApiKey:
-    def test_create_api_key_success(self, app, user_no_api_key):
+    def test_create_api_key_success(self, app):
+        user_no_api_key = ckan_factories.UserWithToken()
         environ = {"Authorization": user_no_api_key["token"]}
         api_key = "test-activityinfo-api-key"
 
@@ -25,7 +20,8 @@ class TestCreateApiKey:
         assert resp.status_code == 200
         assert "ActivityInfo API key updated successfully" in resp.body
 
-    def test_create_api_key_missing(self, app, user_no_api_key):
+    def test_create_api_key_missing(self, app):
+        user_no_api_key = ckan_factories.UserWithToken()
         environ = {"Authorization": user_no_api_key["token"]}
         url = toolkit.url_for("activity_info.update_api_key")
         resp = app.post(
