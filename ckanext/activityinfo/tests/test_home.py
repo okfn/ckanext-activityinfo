@@ -15,7 +15,7 @@ def setup_data():
     return obj
 
 
-@pytest.mark.usefixtures("with_plugins", "clean_db")
+@pytest.mark.usefixtures("clean_db")
 class TestActivityInfoUI:
     def test_regular_user(self, app, setup_data):
         environ = {"Authorization": setup_data.regular_user["token"]}
