@@ -109,3 +109,35 @@ class ActivityInfoClient:
             A string containing the URL to access the form.
         """
         return f"{self.base_url}/app#form/{form_id}/table"
+
+    def start_job_download_form_data(self, form_id, format="CSV"):
+        """
+        Use the Jobs API to export form data as CSV.
+        Read: https://www.activityinfo.org/support/docs/api/reference/exportFormJob.html
+        """
+        available_formats = ["CSV", "XLSX", "TEXT", "DOCX", "PDF", "SQLITE", "NDJSON"]
+        if format not in available_formats:
+            raise ValueError(f"Invalid format. Supported formats are {available_formats}")
+        endpoint = "resources/jobs"
+        payload = {
+            "type": "exportForm",
+            "descriptor": {
+                "tableModels": [
+                    {
+                        "formId": form_id,
+                        "columns": [],
+                        "ordering": [],
+                        "filter": None,
+                    }
+                ],
+                "format": format,
+                "utcOffset": -180,
+            }
+        }
+        headers = self.get_user_auth_headers()
+        url = f"{self.base_url}/{endpoint}"
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        job_info = response.json()
+        # TODO, get the job info so we can start following the process until it finishes
+        return job_info
