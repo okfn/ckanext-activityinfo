@@ -46,7 +46,7 @@ def databases():
         message = f"Could not retrieve ActivityInfo databases: {e}"
         log.error(message)
         toolkit.h.flash_error(message)
-        return toolkit.redirect_to('activity_info.index')
+        return toolkit.redirect_to('activity_info.api_key')
 
     log.info(f"Retrieved {ai_databases}")
     # add the ActivityInfo URL to each database
@@ -126,7 +126,7 @@ def update_api_key():
         message = 'Missing ActivityInfo API key.'
         log.error(message)
         toolkit.h.flash_error(message)
-        return toolkit.redirect_to('activity_info.index')
+        return toolkit.redirect_to('activity_info.api_key')
 
     plugin_extras = get_activity_info_user_plugin_extras(toolkit.c.user) or {}
     activity_info_extras = plugin_extras.get('activity_info', {})
@@ -141,7 +141,7 @@ def update_api_key():
         }
     )
     toolkit.h.flash_success('ActivityInfo API key updated successfully.')
-    return toolkit.redirect_to('activity_info.index')
+    return toolkit.redirect_to('activity_info.api_key')
 
 
 @activityinfo_bp.route('/remove-api-key', methods=['POST'])
@@ -150,7 +150,7 @@ def remove_api_key():
     plugin_extras = get_activity_info_user_plugin_extras(toolkit.c.user) or {}
     if not plugin_extras or 'activity_info' not in plugin_extras:
         toolkit.h.flash_error('No ActivityInfo API key found to remove.')
-        return toolkit.redirect_to('activity_info.index')
+        return toolkit.redirect_to('activity_info.api_key')
 
     activity_info_extras = plugin_extras.get('activity_info', {})
     activity_info_extras.pop('api_key', None)
@@ -164,4 +164,4 @@ def remove_api_key():
         }
     )
     toolkit.h.flash_success('ActivityInfo API key removed successfully.')
-    return toolkit.redirect_to('activity_info.index')
+    return toolkit.redirect_to('activity_info.api_key')
