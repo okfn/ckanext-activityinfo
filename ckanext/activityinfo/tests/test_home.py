@@ -1,3 +1,4 @@
+from unittest import mock
 from types import SimpleNamespace
 import pytest
 from ckantoolkit.tests import factories as ckan_factories
@@ -22,13 +23,29 @@ class TestActivityInfoUI:
 
         resp = app.get("/activity-info", headers=environ)
         assert resp.status_code == 200
-        # CKAN users without a registered ActivityInfo token, will be asked to add one
+        # This must be redirected to the /api-key URL
         assert "Add API key" in resp.body
 
     def test_activityinfo_user(self, app, setup_data):
         environ = {"Authorization": setup_data.activityinfo_user["token"]}
+        fake_databases = [
+            {
+                "databaseId": "0001",
+                "label": "Database label 01",
+                "description": "",
+                "ownerId": "999999999",
+                "billingAccountId": 8888888888888888,
+                "suspended": False,
+                "publishedTemplate": False,
+                "languages": []
+            },
+        ]
 
-        resp = app.get("/activity-info", headers=environ)
-        assert resp.status_code == 200
-        # Activity info users will see the ActivityInfo UI
-        assert "Update API key" in resp.body
+        with mock.patch(
+            "ckanext.activityinfo.data.base.ActivityInfoClient.get_databases",
+            return_value=fake_databases,
+        ):
+            resp = app.get("/activity-info", headers=environ)
+            assert resp.status_code == 200
+            # Activity info users will be redirected to see their databases
+            assert "Activity Info databases" in resp.body

@@ -1,0 +1,12 @@
+{% ckan_extends %}
+
+{% block content_primary_nav %}
+  {{ super() }}
+
+  {{ h.build_nav_icon(
+        'activity_info.index', 'Activity Info',
+        icon='activity-info-ico'
+     )
+  }}
+
+  {% endblock %}

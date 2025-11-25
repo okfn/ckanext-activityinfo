@@ -1,3 +1,13 @@
 .btn {
     margin: 7px;
 }
+
+.fa-activity-info-ico {
+  /* Use kobo official image */
+  background-image: url(/img/logo-activity-info.png);
+  background-size: 18px 18px;
+  height: 18px;
+  width: 18px;
+  content: "";
+  display: inline-block;
+}
