@@ -1,0 +1,11 @@
+{% ckan_extends %}
+
+{% block styles %}
+    {{ super() }}
+    {% asset 'activityinfo/activityinfo-css' %}
+{% endblock %}
+
+{% block body_extras %}
+    {{ super() }}
+    {% asset 'activityinfo/activityinfo-js' %}
+{% endblock %}
