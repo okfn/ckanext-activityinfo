@@ -14,9 +14,9 @@ class TestFormView:
         fake_database_id = "db01"
         fake_form = {
             "id": fake_form_id,
-            "label": "Form label 01",
             "schema": {
                 "databaseId": fake_database_id,
+                "label": "Form label 01",
                 "elements": [
                     {"code": "field1", "label": "Field 1"},
                     {"code": "field2", "label": "Field 2"}
