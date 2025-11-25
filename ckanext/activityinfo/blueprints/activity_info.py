@@ -112,7 +112,6 @@ def form(database_id, form_id):
         'data': data,
         'form': form,
         'database_id': schema['databaseId'],
-        'database': {'label': 'Test DB'},
         'fields': fields,
     }
     return toolkit.render('activity_info/form_details.html', extra_vars)
