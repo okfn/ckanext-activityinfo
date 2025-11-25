@@ -99,3 +99,13 @@ class ActivityInfoClient:
             A string containing the URL to access the database.
         """
         return f"{self.base_url}/app#database/{database_id}/"
+
+    def get_url_to_form(self, form_id):
+        """ Utility function to get the URL to access a form in ActivityInfo web app.
+        Args:
+            database_id (str): The ID of the database.
+            form_id (str): The ID of the form.
+        Returns:
+            A string containing the URL to access the form.
+        """
+        return f"{self.base_url}/app#form/{form_id}/table"

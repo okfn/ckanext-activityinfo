@@ -12,7 +12,7 @@
                 <th class="col-md-3">Form</th>
                 <th class="col-md-1">Visibility</th>
                 <th class="col-md-1">Description</th>
-                <th class="col-md-1">Actions</th>
+                <th class="col-md-3">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -28,7 +28,10 @@
                     <!-- TODO detect no related dataset and allow the creation
                     <a href="#" class="btn btn-primary">Create a Dataset</a>
                     -->
-                    <a href="{% url_for 'activity_info.form', database_id=database.databaseId, form_id=form.id %}" class="btn btn-primary">Get form Schema</a>
+                    <a href="{% url_for 'activity_info.form', database_id=database.databaseId, form_id=form.id %}" class="btn btn-primary">
+                        Get form Schema
+                    </a>
+                    <a href="{{ form.url }}" target="_blank" class="btn btn-secondary">Open in ActivityInfo</a>
                 </td>
             </tr>
             {% endfor %}

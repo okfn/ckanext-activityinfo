@@ -58,6 +58,12 @@ def forms(database_id):
         return toolkit.redirect_to('activity_info.databases')
 
     log.info(f"Retrieved {data}")
+
+    # Add urls to each form
+    aic = ActivityInfoClient()
+    for form in data['forms']:
+        form['url'] = aic.get_url_to_form(form['id'])
+
     extra_vars = {
         'forms': data['forms'],
         'database_id': database_id,
