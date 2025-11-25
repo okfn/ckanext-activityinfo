@@ -18,10 +18,10 @@
         <tbody>
             {% for field in fields %}
             <tr>
-                <td>{{ field.id }}</td>
-                <td>{{ field.label }}</td>
-                <td>{{ field.description }}</td>
-                <td>{{ field.code }}</td>
+                <td>{{ field.id | default('', true) }}</td>
+                <td>{{ field.label | default('', true) }}</td>
+                <td>{{ field.description | default('', true) }}</td>
+                <td>{{ field.code | default('', true) }}</td>
             </tr>
             {% endfor %}
         </tbody>
