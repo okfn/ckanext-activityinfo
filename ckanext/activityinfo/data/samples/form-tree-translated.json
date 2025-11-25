@@ -7,7 +7,7 @@
                 "id": "FORM-ID",
                 "schemaVersion": 1,
                 "databaseId": "DATABASE-ID",
-                "label": "RIDL Form",
+                "label": "Label Form",
                 "elements": [
                     {
                         "id": "cbgn1gumhum9w5s4",
