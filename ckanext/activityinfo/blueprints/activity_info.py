@@ -13,6 +13,22 @@ activityinfo_bp = Blueprint('activity_info', __name__, url_prefix='/activity-inf
 
 @activityinfo_bp.route('/')
 def index():
+    """ Home page
+        If the user has an API key, redirect to databases
+        If not, show a page to enter the API key
+    """
+    extra_vars = {
+        'api_key': get_user_token(current_user.name),
+    }
+    if extra_vars['api_key']:
+        return toolkit.redirect_to('activity_info.databases')
+    return toolkit.render('activity_info/index.html', extra_vars)
+
+
+@activityinfo_bp.route('/api-key')
+def api_key():
+    """ Create or update the current ActivityInfo API key for the logged-in user.
+    """
     extra_vars = {
         'api_key': get_user_token(current_user.name),
     }
