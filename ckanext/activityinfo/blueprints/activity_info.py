@@ -2,6 +2,7 @@ import logging
 from flask import Blueprint
 from ckan.common import current_user
 from ckan.plugins import toolkit
+from ckanext.activityinfo.data.base import ActivityInfoClient
 from ckanext.activityinfo.exceptions import ActivityInfoConnectionError
 from ckanext.activityinfo.utils import get_activity_info_user_plugin_extras, get_user_token
 
@@ -32,13 +33,18 @@ def databases():
         return toolkit.redirect_to('activity_info.index')
 
     log.info(f"Retrieved {ai_databases}")
+    # add the ActivityInfo URL to each database
+    aic = ActivityInfoClient()
+    for db in ai_databases:
+        db['url'] = aic.get_url_to_database(db['databaseId'])
+
     extra_vars = {
         'databases': ai_databases,
     }
     return toolkit.render('activity_info/databases.html', extra_vars)
 
 
-@activityinfo_bp.route('/databases/<database_id>/forms')
+@activityinfo_bp.route('/database/<database_id>/forms')
 def forms(database_id):
     try:
         data = toolkit.get_action('act_info_get_forms')(
@@ -52,12 +58,48 @@ def forms(database_id):
         return toolkit.redirect_to('activity_info.databases')
 
     log.info(f"Retrieved {data}")
+
+    # Add urls to each form
+    aic = ActivityInfoClient()
+    for form in data['forms']:
+        form['url'] = aic.get_url_to_form(form['id'])
+
     extra_vars = {
         'forms': data['forms'],
         'database_id': database_id,
         'database': data['database'],
     }
     return toolkit.render('activity_info/forms.html', extra_vars)
+
+
+@activityinfo_bp.route('/database/<database_id>/form/<form_id>')
+def form(database_id, form_id):
+    try:
+        data = toolkit.get_action('act_info_get_form')(
+            context={'user': toolkit.c.user},
+            data_dict={
+                'database_id': database_id,
+                'form_id': form_id
+            }
+        )
+    except (ActivityInfoConnectionError, toolkit.ValidationError) as e:
+        message = f"Could not retrieve ActivityInfo form details: {e}"
+        log.error(message)
+        toolkit.h.flash_error(message)
+        return toolkit.redirect_to('activity_info.forms', database_id=database_id)
+
+    log.info(f"Retrieved {data}")
+    form = data['forms'][form_id]
+    schema = form.get('schema', {})
+    fields = schema.get('elements', {})
+    extra_vars = {
+        'data': data,
+        'form': form,
+        'database_id': schema['databaseId'],
+        'database': {'label': 'Test DB'},
+        'fields': fields,
+    }
+    return toolkit.render('activity_info/form_details.html', extra_vars)
 
 
 @activityinfo_bp.route('/update-api-key', methods=['POST'])

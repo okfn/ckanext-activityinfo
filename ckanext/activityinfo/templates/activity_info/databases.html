@@ -14,7 +14,7 @@
                 <th class="col-md-1">Description</th>
                 <th class="col-md-1">Suspended</th>
                 <th class="col-md-1">Languages</th>
-                <th class="col-md-1">Actions</th>
+                <th class="col-md-3">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -39,6 +39,7 @@
                         href="{{ h.url_for('activity_info.forms', database_id=database.databaseId) }}">
                         Get Forms
                     </a>
+                    <a href="{{ database.url }}" target="_blank" class="btn btn-secondary">Open in ActivityInfo</a>
                 </td>
             </tr>
             {% endfor %}

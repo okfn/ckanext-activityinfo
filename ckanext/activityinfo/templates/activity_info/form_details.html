@@ -1,0 +1,30 @@
+{% extends "activity_info/base.html" %}
+
+{%- block subtitle %}Activity Info forms{% endblock -%}
+
+{% block primary_content %}
+<div class="internal-div-section">
+    <h1>Form <i>{{ form.label }}</i> for database <i>{{ database.label }}</i></h1>
+
+    <table id="activity-info-form-schema" class="table table-header table-hover table-bordered table-responsive">
+        <thead>
+            <tr>
+                <th class="col-md-3">Field id</th>
+                <th class="col-md-3">Label</th>
+                <th class="col-md-3">Description</th>
+                <th class="col-md-3">code</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for field in fields %}
+            <tr>
+                <td>{{ field.id | default('', true) }}</td>
+                <td>{{ field.label | default('', true) }}</td>
+                <td>{{ field.description | default('', true) }}</td>
+                <td>{{ field.code | default('', true) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% endblock %}

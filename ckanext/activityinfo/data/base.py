@@ -84,5 +84,28 @@ class ActivityInfoClient:
             form_id (str): The ID of the form to fetch.
         Returns:
             A dictionary containing the details of the form.
+        See a data sample here ckanext/activityinfo/data/samples/form-tree-translated.json
+
+        We here get the data schema, the actual data must be acceced in chunks from
+        POST /resources/query/chunks
         """
-        return self.get(f"resources/databases/{database_id}/forms/{form_id}")
+        return self.get(f"resources/form/{form_id}/tree/translated")
+
+    def get_url_to_database(self, database_id):
+        """ Utility function to get the URL to access a database in ActivityInfo web app.
+        Args:
+            database_id (str): The ID of the database.
+        Returns:
+            A string containing the URL to access the database.
+        """
+        return f"{self.base_url}/app#database/{database_id}/"
+
+    def get_url_to_form(self, form_id):
+        """ Utility function to get the URL to access a form in ActivityInfo web app.
+        Args:
+            database_id (str): The ID of the database.
+            form_id (str): The ID of the form.
+        Returns:
+            A string containing the URL to access the form.
+        """
+        return f"{self.base_url}/app#form/{form_id}/table"

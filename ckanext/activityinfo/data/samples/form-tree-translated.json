@@ -1,0 +1,80 @@
+{
+    "root": "FORM-ID",
+    "forms": {
+        "FORM-ID": {
+            "id": "FORM-ID",
+            "schema": {
+                "id": "FORM-ID",
+                "schemaVersion": 1,
+                "databaseId": "DATABASE-ID",
+                "label": "RIDL Form",
+                "elements": [
+                    {
+                        "id": "cbgn1gumhum9w5s4",
+                        "code": null,
+                        "label": "Name of tools",
+                        "description": null,
+                        "relevanceCondition": "",
+                        "validationCondition": "",
+                        "required": true,
+                        "type": "FREE_TEXT",
+                        "typeParameters": {
+                            "barcode": false
+                        }
+                    },
+                    {
+                        "id": "cuik9dimhuma8wx5",
+                        "code": null,
+                        "label": "Year",
+                        "description": null,
+                        "relevanceCondition": "",
+                        "validationCondition": "",
+                        "required": false,
+                        "type": "quantity",
+                        "typeParameters": {
+                            "units": "",
+                            "aggregation": "SUM"
+                        }
+                    },
+                    {
+                        "id": "cwwus97mhumaoe96",
+                        "code": null,
+                        "label": "Comment",
+                        "description": null,
+                        "relevanceCondition": "",
+                        "validationCondition": "",
+                        "required": false,
+                        "type": "FREE_TEXT",
+                        "typeParameters": {
+                            "barcode": false
+                        }
+                    }
+                ]
+            },
+            "schemaVersion": 1,
+            "permissions": {
+                "view": true,
+                "viewFilter": null,
+                "createRecord": true,
+                "createFilter": null,
+                "editRecord": true,
+                "editFilter": null,
+                "securityCategories": [
+                    "reviewer"
+                ],
+                "deleteRecord": true,
+                "deleteFilter": null,
+                "bulkDelete": true,
+                "exportRecords": true,
+                "resolveDuplicates": true,
+                "manageImportConfigs": true,
+                "updateSchema": true,
+                "collectionLinks": true,
+                "publicForm": false,
+                "locks": [],
+                "api": true,
+                "fieldLevelConditions": []
+            }
+        }
+    }
+}
