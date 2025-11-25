@@ -2,6 +2,7 @@ import logging
 from flask import Blueprint
 from ckan.common import current_user
 from ckan.plugins import toolkit
+from ckanext.activityinfo.data.base import ActivityInfoClient
 from ckanext.activityinfo.exceptions import ActivityInfoConnectionError
 from ckanext.activityinfo.utils import get_activity_info_user_plugin_extras, get_user_token
 
@@ -32,6 +33,11 @@ def databases():
         return toolkit.redirect_to('activity_info.index')
 
     log.info(f"Retrieved {ai_databases}")
+    # add the ActivityInfo URL to each database
+    aic = ActivityInfoClient()
+    for db in ai_databases:
+        db['url'] = aic.get_url_to_database(db['databaseId'])
+
     extra_vars = {
         'databases': ai_databases,
     }

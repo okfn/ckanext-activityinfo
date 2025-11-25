@@ -90,3 +90,12 @@ class ActivityInfoClient:
         POST /resources/query/chunks
         """
         return self.get(f"resources/form/{form_id}/tree/translated")
+
+    def get_url_to_database(self, database_id):
+        """ Utility function to get the URL to access a database in ActivityInfo web app.
+        Args:
+            database_id (str): The ID of the database.
+        Returns:
+            A string containing the URL to access the database.
+        """
+        return f"{self.base_url}/app#database/{database_id}/"
