@@ -41,13 +41,11 @@ class TestDownloadEndpoints:
             assert data["job_id"] == "job_abc123"
             assert data["result"]["state"] == "started"
 
-    def test_download_form_data_unauthorized(self, app, setup_data):
+    def test_download_form_data_unauthorized(self, app):
         """Test that download requires authentication"""
         form_id = "test_form_123"
-        resp = app.get(f"/activity-info/download/{form_id}")
-        # Should redirect to login or return error
-        assert resp.status_code == 302
-        assert "login" in resp.location
+        with pytest.raises(toolkit.NotAuthorized):
+            app.get(f"/activity-info/download/{form_id}")
 
     def test_job_status_in_progress(self, app, setup_data):
         """Test job status endpoint when job is in progress"""
