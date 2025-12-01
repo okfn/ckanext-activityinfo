@@ -52,6 +52,7 @@ def act_info_get_forms(context, data_dict):
 
     ret = {
         'forms': data['forms'],
+        'sub_forms': data.get('sub_forms', []),
         'database': data['database']
     }
     return ret
