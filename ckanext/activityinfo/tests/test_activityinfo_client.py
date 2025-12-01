@@ -106,6 +106,84 @@ def test_get_forms(requests_mock_fixture, client):
     assert result["forms"][1]["id"] == "f3"
 
 
+def test_get_forms_with_sub_forms(requests_mock_fixture, client):
+    db_id = "db1"
+    url = f"https://www.activityinfo.org/resources/databases/{db_id}"
+    fake_response = {
+        "databaseId": db_id,
+        "resources": [
+            {"id": "f1", "type": "FORM", "label": "Main Form 1"},
+            {"id": "f2", "type": "FOLDER", "label": "Folder"},
+            {"id": "f3", "type": "FORM", "label": "Main Form 2"},
+            {"id": "sf1", "type": "SUB_FORM", "label": "Sub Form 1"},
+            {"id": "sf2", "type": "SUB_FORM", "label": "Sub Form 2"},
+        ]
+    }
+    requests_mock_fixture.get(url, json=fake_response)
+    result = client.get_forms(db_id, include_sub_forms=True)
+
+    assert "forms" in result
+    assert "sub_forms" in result
+    assert len(result["forms"]) == 2
+    assert len(result["sub_forms"]) == 2
+    assert result["sub_forms"][0]["id"] == "sf1"
+    assert result["sub_forms"][1]["id"] == "sf2"
+
+
+def test_get_forms_without_sub_forms(requests_mock_fixture, client):
+    db_id = "db1"
+    url = f"https://www.activityinfo.org/resources/databases/{db_id}"
+    fake_response = {
+        "databaseId": db_id,
+        "resources": [
+            {"id": "f1", "type": "FORM"},
+            {"id": "sf1", "type": "SUB_FORM"},
+        ]
+    }
+    requests_mock_fixture.get(url, json=fake_response)
+    result = client.get_forms(db_id, include_sub_forms=False)
+
+    assert "forms" in result
+    assert "sub_forms" in result
+    assert len(result["forms"]) == 1
+    assert len(result["sub_forms"]) == 0
+
+
+def test_get_forms_with_database_data(requests_mock_fixture, client):
+    db_id = "db1"
+    url = f"https://www.activityinfo.org/resources/databases/{db_id}"
+    fake_response = {
+        "databaseId": db_id,
+        "label": "Test Database",
+        "resources": [
+            {"id": "f1", "type": "FORM"},
+        ]
+    }
+    requests_mock_fixture.get(url, json=fake_response)
+    result = client.get_forms(db_id, include_db_data=True)
+
+    assert "database" in result
+    assert result["database"]["databaseId"] == db_id
+    assert result["database"]["label"] == "Test Database"
+
+
+def test_get_forms_without_database_data(requests_mock_fixture, client):
+    db_id = "db1"
+    url = f"https://www.activityinfo.org/resources/databases/{db_id}"
+    fake_response = {
+        "databaseId": db_id,
+        "label": "Test Database",
+        "resources": [
+            {"id": "f1", "type": "FORM"},
+        ]
+    }
+    requests_mock_fixture.get(url, json=fake_response)
+    result = client.get_forms(db_id, include_db_data=False)
+
+    assert "database" in result
+    assert result["database"] == {}
+
+
 def test_get_form(requests_mock_fixture, client):
     db_id = "db1"
     form_id = "f1"
