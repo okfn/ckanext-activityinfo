@@ -1,0 +1,43 @@
+{
+    "id": "4883852953649152",
+    "userId": "3333333333333333",
+    "type": "exportForm",
+    "descriptor": {
+        "tableModels": [
+            {
+                "formId": "cj8zgdpmhum9000",
+                "columns": [
+                    {
+                        "id": "cbgn1111111111111",
+                        "label": "Name of tools",
+                        "formula": "cbgn1111111111111",
+                        "translate": false
+                    },
+                    {
+                        "id": "cbgn1111111111112",
+                        "label": "Year",
+                        "formula": "cbgn1111111111112",
+                        "translate": false
+                    },
+                    {
+                        "id": "cbgn1111111111113",
+                        "label": "Comment",
+                        "formula": "cbgn1111111111113",
+                        "translate": false
+                    }
+                ],
+                "ordering": [],
+                "filter": null
+            }
+        ],
+        "format": "CSV",
+        "utcOffset": 0
+    },
+    "state": "completed",
+    "locale": "en",
+    "percentComplete": 0,
+    "result": {
+        "downloadUrl": "/resources/jobs/4883852953649152/24626fcdb22ccedb/RIDL_Form_20251124_160806_UTC-03_00.csv",
+        "filename": "RIDL_Form_20251124_160806_UTC-03_00.csv"
+    }
+}
