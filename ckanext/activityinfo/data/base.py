@@ -114,6 +114,7 @@ class ActivityInfoClient:
         """
         Use the Jobs API to export form data as CSV.
         Read: https://www.activityinfo.org/support/docs/api/reference/exportFormJob.html
+        See response sample ckanext/activityinfo/data/samples/job-started.json
         """
         available_formats = ["CSV", "XLSX", "TEXT", "DOCX", "PDF", "SQLITE", "NDJSON"]
         if format not in available_formats:
@@ -131,7 +132,7 @@ class ActivityInfoClient:
                     }
                 ],
                 "format": format,
-                "utcOffset": -180,
+                "utcOffset": 0,
             }
         }
         headers = self.get_user_auth_headers()
@@ -139,5 +140,42 @@ class ActivityInfoClient:
         response = requests.post(url, headers=headers, json=payload)
         response.raise_for_status()
         job_info = response.json()
-        # TODO, get the job info so we can start following the process until it finishes
         return job_info
+
+    def get_job_status(self, job_id):
+        """
+        Get the status of a job.
+        Read:
+         - Getting job status https://www.activityinfo.org/support/docs/api/reference/exportFormJob.html#getting-the-job-status
+           GET https://www.activityinfo.org/resources/jobs/{jobId}
+        """
+        endpoint = f"resources/jobs/{job_id}"
+        return self.get(endpoint)
+
+    def get_job_file(self, job_id):
+        """
+        Download the file or return the percentage completed if not ready.
+        See JSON sample from ckanext/activityinfo/data/samples/job-complete.json
+        Return a tuple: (bool done, content or progress %)
+        """
+        job_status = self.get_job_status(job_id)
+        if job_status["state"] != "completed":
+            return False, job_status.get("percentComplete", 0)
+
+        export_info = job_status["result"]
+        endpoint = export_info["downloadUrl"].lstrip("/")
+        url = f"{self.base_url}/{endpoint}"
+        return True, url
+
+    def download_finished_export(self, download_url):
+        """
+        Download the finished export file from ActivityInfo.
+        Args:
+            download_url (str): The URL to download the file from.
+        Returns:
+            The content of the downloaded file.
+        """
+        headers = self.get_user_auth_headers()
+        response = requests.get(download_url, headers=headers)
+        response.raise_for_status()
+        return response.content
