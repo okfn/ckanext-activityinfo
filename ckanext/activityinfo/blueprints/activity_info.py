@@ -2,6 +2,7 @@ import logging
 from flask import Blueprint
 from ckan.common import current_user
 from ckan.plugins import toolkit
+from ckan.views.api import _finish_ok
 from ckanext.activityinfo.data.base import ActivityInfoClient
 from ckanext.activityinfo.exceptions import ActivityInfoConnectionError
 from ckanext.activityinfo.utils import get_activity_info_user_plugin_extras, get_user_token
@@ -164,3 +165,60 @@ def remove_api_key():
     )
     toolkit.h.flash_success('ActivityInfo API key removed successfully.')
     return toolkit.redirect_to('activity_info.api_key')
+
+
+@activityinfo_bp.route('/download/<form_id>')
+def download_form_data(form_id):
+    """ Download form data as JSON file.
+        This starts an export job and returns the job status URL.
+    """
+    try:
+        job_info = toolkit.get_action('act_start_download_job')(
+            context={'user': toolkit.c.user},
+            data_dict={'form_id': form_id}
+        )
+    except ActivityInfoConnectionError as e:
+        error = f"Error starting export job for form {form_id} and user {toolkit.c.user}: {e}"
+        log.error(error)
+        raise ActivityInfoConnectionError(error)
+
+    job_id = job_info.get('id')
+    log.info(f"Started export job: {job_id}")
+    ret = {
+        'success': True,
+        'job_id': job_id,
+        'result': job_info,
+    }
+    return _finish_ok(ret)
+
+
+@activityinfo_bp.route('/job-status/<job_id>')
+def job_status(job_id):
+    """ Get the status of an ActivityInfo export job. """
+    try:
+        job_status = toolkit.get_action('act_info_get_job_status')(
+            context={'user': toolkit.c.user},
+            data_dict={'job_id': job_id}
+        )
+    except ActivityInfoConnectionError as e:
+        error = f"Error getting job status for job {job_id} and user {toolkit.c.user}: {e}"
+        log.error(error)
+        return _finish_ok({'success': False, 'error': str(e)})
+
+    log.info(f"Job status for {job_id}: {job_status}")
+
+    # Build full download URL if job is completed
+    full_download_url = None
+    if job_status.get('state') == 'completed':
+        result = job_status.get('result', {})
+        relative_url = result.get('downloadUrl', '')
+        if relative_url:
+            aic = ActivityInfoClient()
+            full_download_url = f"{aic.base_url}/{relative_url.lstrip('/')}"
+
+    ret = {
+        'success': True,
+        'result': job_status,
+        'download_url': full_download_url,
+    }
+    return _finish_ok(ret)

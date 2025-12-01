@@ -91,6 +91,39 @@ class ActivityInfoClient:
         """
         return self.get(f"resources/form/{form_id}/tree/translated")
 
+    def get_form_columns(self, form_id):
+        """
+        Get the columns for a form to use in export requests.
+        Fetches the form schema and builds the columns array from the elements.
+
+        Args:
+            form_id (str): The ID of the form.
+        Returns:
+            A list of column definitions for the export API.
+        """
+        form_tree = self.get(f"resources/form/{form_id}/tree/translated")
+        forms_data = form_tree.get('forms', {})
+        form_data = forms_data.get(form_id, {})
+        schema = form_data.get('schema', {})
+        elements = schema.get('elements', [])
+
+        columns = []
+        for element in elements:
+            # Skip sub-forms and other non-field elements
+            element_type = element.get('type', '')
+            if element_type in ('SUB_FORM', 'section'):
+                continue
+
+            column = {
+                'id': element.get('id'),
+                'label': element.get('label', element.get('id')),
+                'formula': element.get('id'),
+                'translate': False
+            }
+            columns.append(column)
+
+        return columns
+
     def get_url_to_database(self, database_id):
         """ Utility function to get the URL to access a database in ActivityInfo web app.
         Args:
@@ -109,3 +142,84 @@ class ActivityInfoClient:
             A string containing the URL to access the form.
         """
         return f"{self.base_url}/app#form/{form_id}/table"
+
+    def start_job_download_form_data(self, form_id, format="CSV", columns=None):
+        """
+        Use the Jobs API to export form data as CSV.
+        Read: https://www.activityinfo.org/support/docs/api/reference/exportFormJob.html
+        See response sample ckanext/activityinfo/data/samples/job-started.json
+
+        Args:
+            form_id (str): The ID of the form to export.
+            format (str): Export format (CSV, XLSX, etc.)
+            columns (list): Column definitions. If None, fetches all columns from form schema.
+        """
+        available_formats = ["CSV", "XLSX", "TEXT", "DOCX", "PDF", "SQLITE", "NDJSON"]
+        if format not in available_formats:
+            raise ValueError(f"Invalid format. Supported formats are {available_formats}")
+
+        # If no columns provided, fetch them from the form schema
+        if columns is None:
+            columns = self.get_form_columns(form_id)
+            log.info(f"Fetched {len(columns)} columns for form {form_id}")
+
+        endpoint = "resources/jobs"
+        payload = {
+            "type": "exportForm",
+            "descriptor": {
+                "tableModels": [
+                    {
+                        "formId": form_id,
+                        "columns": columns,
+                        "ordering": [],
+                        "filter": None,
+                    }
+                ],
+                "format": format,
+                "utcOffset": 0,
+            }
+        }
+        headers = self.get_user_auth_headers()
+        url = f"{self.base_url}/{endpoint}"
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        job_info = response.json()
+        return job_info
+
+    def get_job_status(self, job_id):
+        """
+        Get the status of a job.
+        Read:
+         - Getting job status https://www.activityinfo.org/support/docs/api/reference/exportFormJob.html#getting-the-job-status
+           GET https://www.activityinfo.org/resources/jobs/{jobId}
+        """
+        endpoint = f"resources/jobs/{job_id}"
+        return self.get(endpoint)
+
+    def get_job_file(self, job_id):
+        """
+        Download the file or return the percentage completed if not ready.
+        See JSON sample from ckanext/activityinfo/data/samples/job-complete.json
+        Return a tuple: (bool done, content or progress %)
+        """
+        job_status = self.get_job_status(job_id)
+        if job_status["state"] != "completed":
+            return False, job_status.get("percentComplete", 0)
+
+        export_info = job_status["result"]
+        endpoint = export_info["downloadUrl"].lstrip("/")
+        url = f"{self.base_url}/{endpoint}"
+        return True, url
+
+    def download_finished_export(self, download_url):
+        """
+        Download the finished export file from ActivityInfo.
+        Args:
+            download_url (str): The URL to download the file from.
+        Returns:
+            The content of the downloaded file.
+        """
+        headers = self.get_user_auth_headers()
+        response = requests.get(download_url, headers=headers)
+        response.raise_for_status()
+        return response.content

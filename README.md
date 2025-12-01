@@ -7,6 +7,7 @@
 
  - Documentation: https://www.activityinfo.org/support/docs/index.html
  - API Reference: https://www.activityinfo.org/support/docs/api/index.html
+ - Source code (old version): https://github.com/bedatadriven/activityinfo
 
 # CKAN ActivityInfo extension
 

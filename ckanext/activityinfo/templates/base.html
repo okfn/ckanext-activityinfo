@@ -2,10 +2,12 @@
 
 {% block styles %}
     {{ super() }}
+    <!-- ActivityInfo CSS -->
     {% asset 'activityinfo/activityinfo-css' %}
 {% endblock %}
 
-{% block body_extras %}
+{% block scripts %}
     {{ super() }}
+    <!-- ActivityInfo JS -->
     {% asset 'activityinfo/activityinfo-js' %}
 {% endblock %}
