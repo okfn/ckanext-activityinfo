@@ -32,3 +32,15 @@ def act_info_get_forms(context, data_dict):
 @require_activity_info_token_decorator
 def act_info_get_form(context, data_dict):
     return {'success': True}
+
+
+@toolkit.auth_disallow_anonymous_access
+@require_activity_info_token_decorator
+def act_start_download_job(context, data_dict):
+    return {'success': True}
+
+
+@toolkit.auth_disallow_anonymous_access
+@require_activity_info_token_decorator
+def act_info_get_job_status(context, data_dict):
+    return {'success': True}

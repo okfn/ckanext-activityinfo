@@ -27,6 +27,8 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
             'act_info_get_databases': activity_info_actions.act_info_get_databases,
             'act_info_get_forms': activity_info_actions.act_info_get_forms,
             'act_info_get_form': activity_info_actions.act_info_get_form,
+            'act_info_get_job_status': activity_info_actions.act_info_get_job_status,
+            'act_start_download_job': activity_info_actions.act_start_download_job,
         }
 
     # IAuthFunctions
@@ -36,6 +38,8 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
             'act_info_get_databases': activity_info_auth.act_info_get_databases,
             'act_info_get_forms': activity_info_auth.act_info_get_forms,
             'act_info_get_form': activity_info_auth.act_info_get_form,
+            'act_info_get_job_status': activity_info_auth.act_info_get_job_status,
+            'act_start_download_job': activity_info_auth.act_start_download_job,
         }
 
     # ITemplateHelpers
