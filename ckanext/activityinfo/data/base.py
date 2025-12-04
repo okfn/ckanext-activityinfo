@@ -164,7 +164,7 @@ class ActivityInfoClient:
             format (str): Export format (CSV, XLSX, etc.)
             columns (list): Column definitions. If None, fetches all columns from form schema.
         """
-        available_formats = ["CSV", "XLSX", "TEXT", "DOCX", "PDF", "SQLITE", "NDJSON"]
+        available_formats = ["CSV", "XLSX", "TEXT"]
         if format not in available_formats:
             raise ValueError(f"Invalid format. Supported formats are {available_formats}")
 
