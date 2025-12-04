@@ -169,7 +169,7 @@ def remove_api_key():
 
 
 @activityinfo_bp.route('/download/<form_id>.<format>')
-def download_form_data(form_id, format):
+def download_form_data(form_id, format='csv'):
     """ Download form data as JSON file.
         This starts an export job and returns the job status URL.
     """
