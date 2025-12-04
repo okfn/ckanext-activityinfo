@@ -33,7 +33,7 @@ class TestDownloadEndpoints:
             "ckanext.activityinfo.data.base.ActivityInfoClient.start_job_download_form_data",
             return_value=fake_job_response,
         ):
-            resp = app.get(f"/activity-info/download/{form_id}", headers=environ)
+            resp = app.get(f"/activity-info/download/{form_id}.csv", headers=environ)
 
             assert resp.status_code == 200
             data = resp.json
@@ -45,7 +45,7 @@ class TestDownloadEndpoints:
         """Test that download requires authentication"""
         form_id = "test_form_123"
         with pytest.raises(toolkit.NotAuthorized):
-            app.get(f"/activity-info/download/{form_id}")
+            app.get(f"/activity-info/download/{form_id}.csv")
 
     def test_job_status_in_progress(self, app, setup_data):
         """Test job status endpoint when job is in progress"""
