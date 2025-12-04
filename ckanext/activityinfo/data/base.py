@@ -65,14 +65,24 @@ class ActivityInfoClient:
         """
         return self.get(f"resources/databases/{database_id}")
 
-    def get_forms(self, database_id, include_db_data=True):
+    def get_forms(self, database_id, include_db_data=True, include_sub_forms=True):
         """ Fetch the list of forms for a specific database.
         There is not direct API endpoint
         We get the database nad the resources -> list -> filter type=FORM
         """
         database = self.get_database(database_id)
-        forms = [resource for resource in database["resources"] if resource["type"] == "FORM"]
-        data = {"forms": forms}
+        forms = [
+            resource for resource in database["resources"]
+            if resource["type"] == "FORM"
+        ]
+        data = {"forms": forms, "sub_forms": [], "database": {}}
+        if include_sub_forms:
+            sub_forms = [
+                resource for resource in database["resources"]
+                if resource["type"] == "SUB_FORM"
+            ]
+            data["sub_forms"] = sub_forms
+
         if include_db_data:
             data["database"] = database
         return data

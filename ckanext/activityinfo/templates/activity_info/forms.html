@@ -12,7 +12,7 @@
                 <th class="col-md-3">Form</th>
                 <th class="col-md-1">Visibility</th>
                 <th class="col-md-1">Description</th>
-                <th class="col-md-3">Actions</th>
+                <th class="col-md-7">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -49,4 +49,51 @@
         </tbody>
     </table>
 
+    {% if sub_forms %}
+    <h2>Sub Forms</h2>
+
+    <table id="activity-info-forms-list-table" class="table table-header table-hover table-bordered table-responsive">
+        <thead>
+            <tr>
+                <th class="col-md-3">Sub Form</th>
+                <th class="col-md-1">Visibility</th>
+                <th class="col-md-1">Description</th>
+                <th class="col-md-7">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for form in sub_forms %}
+            <tr>
+                <td>{{ form.label }}</td>
+                <td>{{ form.visibility }}</td>
+                <td>{{ form.description }}</td>
+                <td>
+                    <!-- TODO detect created datasets with this form 
+                    <a href="#" class="btn btn-primary">See created Dataset</a>
+                    -->
+                    <!-- TODO detect no related dataset and allow the creation
+                    <a href="#" class="btn btn-primary">Create a Dataset</a>
+                    -->
+                    <a href="{% url_for 'activity_info.form', database_id=database.databaseId, form_id=form.id %}" class="btn btn-primary">
+                        Get form Schema
+                    </a>
+                    <a href="{{ form.url }}" target="_blank" class="btn btn-secondary">Open in ActivityInfo</a>
+                    <button type="button" 
+                            class="btn btn-secondary ai-download-btn" 
+                            data-form-id="{{ form.id }}"
+                            data-form-label="{{ form.label }}"
+                            data-download-url="{% url_for 'activity_info.download_form_data', form_id=form.id %}"
+                            data-job-status-url="{% url_for 'activity_info.job_status', job_id='__JOB_ID__' %}">
+                        <span class="download-text">Download Data</span>
+                        <span class="download-spinner" style="display: none;">
+                            <i class="fa fa-spinner fa-spin"></i> <span class="progress-text">Starting...</span>
+                        </span>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% endif %}
     {% endblock %}

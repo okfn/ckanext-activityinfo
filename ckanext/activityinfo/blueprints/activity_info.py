@@ -83,6 +83,7 @@ def forms(database_id):
 
     extra_vars = {
         'forms': data['forms'],
+        'sub_forms': data.get('sub_forms', []),
         'database_id': database_id,
         'database': data['database'],
     }
