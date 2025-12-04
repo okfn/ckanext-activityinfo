@@ -168,15 +168,15 @@ def remove_api_key():
     return toolkit.redirect_to('activity_info.api_key')
 
 
-@activityinfo_bp.route('/download/<form_id>')
-def download_form_data(form_id):
+@activityinfo_bp.route('/download/<form_id>.<format>')
+def download_form_data(form_id, format):
     """ Download form data as JSON file.
         This starts an export job and returns the job status URL.
     """
     try:
         job_info = toolkit.get_action('act_start_download_job')(
             context={'user': toolkit.c.user},
-            data_dict={'form_id': form_id}
+            data_dict={'form_id': form_id, 'format': format.upper()}
         )
     except ActivityInfoConnectionError as e:
         error = f"Error starting export job for form {form_id} and user {toolkit.c.user}: {e}"

@@ -19,8 +19,16 @@
         const btn = event.currentTarget;
         const formId = btn.dataset.formId;
         const formLabel = btn.dataset.formLabel;
-        const downloadUrl = btn.dataset.downloadUrl;
+        const downloadUrlTemplate = btn.dataset.downloadUrlTemplate;
         const jobStatusUrlTemplate = btn.dataset.jobStatusUrl;
+
+        // Get selected format from sibling select element within the btn-group
+        const btnGroup = btn.closest('.btn-group');
+        const formatSelect = btnGroup ? btnGroup.querySelector('.ai-format-select') : btn.parentElement.querySelector('.ai-format-select');
+        const selectedFormat = formatSelect ? formatSelect.value : 'CSV';
+
+        // Replace format placeholder in URL
+        const downloadUrl = downloadUrlTemplate.replace('__FORMAT__', selectedFormat.toLowerCase());
 
         // Disable button and show spinner
         setButtonLoading(btn, true, 'Starting...');

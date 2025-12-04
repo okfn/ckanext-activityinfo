@@ -32,17 +32,24 @@
                         Get form Schema
                     </a>
                     <a href="{{ form.url }}" target="_blank" class="btn btn-secondary">Open in ActivityInfo</a>
-                    <button type="button" 
-                            class="btn btn-secondary ai-download-btn" 
-                            data-form-id="{{ form.id }}"
-                            data-form-label="{{ form.label }}"
-                            data-download-url="{% url_for 'activity_info.download_form_data', form_id=form.id %}"
-                            data-job-status-url="{% url_for 'activity_info.job_status', job_id='__JOB_ID__' %}">
-                        <span class="download-text">Download Data</span>
-                        <span class="download-spinner" style="display: none;">
-                            <i class="fa fa-spinner fa-spin"></i> <span class="progress-text">Starting...</span>
-                        </span>
-                    </button>
+                    <div class="btn-group" style="margin-left: 5px;">
+                        <button type="button" 
+                                class="btn btn-secondary ai-download-btn" 
+                                data-form-id="{{ form.id }}"
+                                data-form-label="{{ form.label }}"
+                                data-download-url-template="{% url_for 'activity_info.download_form_data', form_id=form.id, format='__FORMAT__' %}"
+                                data-job-status-url="{% url_for 'activity_info.job_status', job_id='__JOB_ID__' %}">
+                            <span class="download-text">Download</span>
+                            <span class="download-spinner" style="display: none;">
+                                <i class="fa fa-spinner fa-spin"></i> <span class="progress-text">Starting...</span>
+                            </span>
+                        </button>
+                        <select class="btn btn-secondary ai-format-select" style="border-left: 1px solid #ccc; padding: 6px 8px; cursor: pointer;">
+                            <option value="CSV">CSV</option>
+                            <option value="XLSX">XLSX</option>
+                            <option value="TEXT">TEXT</option>
+                        </select>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
@@ -78,17 +85,26 @@
                         Get form Schema
                     </a>
                     <a href="{{ form.url }}" target="_blank" class="btn btn-secondary">Open in ActivityInfo</a>
-                    <button type="button" 
-                            class="btn btn-secondary ai-download-btn" 
-                            data-form-id="{{ form.id }}"
-                            data-form-label="{{ form.label }}"
-                            data-download-url="{% url_for 'activity_info.download_form_data', form_id=form.id %}"
-                            data-job-status-url="{% url_for 'activity_info.job_status', job_id='__JOB_ID__' %}">
-                        <span class="download-text">Download Data</span>
-                        <span class="download-spinner" style="display: none;">
-                            <i class="fa fa-spinner fa-spin"></i> <span class="progress-text">Starting...</span>
-                        </span>
-                    </button>
+                    <div class="btn-group" style="margin-left: 5px;">
+                        <button type="button" 
+                                class="btn btn-secondary ai-download-btn" 
+                                data-form-id="{{ form.id }}"
+                                data-form-label="{{ form.label }}"
+                                data-download-url-template="{% url_for 'activity_info.download_form_data', form_id=form.id, format='__FORMAT__' %}"
+                                data-job-status-url="{% url_for 'activity_info.job_status', job_id='__JOB_ID__' %}">
+                            <span class="download-text">Download</span>
+                            <span class="download-spinner" style="display: none;">
+                                <i class="fa fa-spinner fa-spin"></i> <span class="progress-text">Starting...</span>
+                            </span>
+                        </button>
+                        <select class="btn btn-secondary ai-format-select" style="border-left: 1px solid #ccc; padding: 6px 8px; cursor: pointer;">
+                            <option value="CSV">CSV</option>
+                            <option value="XLSX">XLSX</option>
+                            <option value="NDJSON">NDJSON</option>
+                            <option value="TEXT">TEXT</option>
+                            <option value="SQLITE">SQLITE</option>
+                        </select>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
