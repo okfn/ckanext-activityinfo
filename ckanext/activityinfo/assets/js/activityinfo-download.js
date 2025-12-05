@@ -41,7 +41,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadDatabases() {
-        fetch('/activity-info/api/databases')
+        var csrf_field = $('meta[name=csrf_field_name]').attr('content');
+        var csrf_token = $('meta[name='+ csrf_field +']').attr('content');
+        
+        fetch('/api/action/act_info_get_databases', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf_token
+            },
+            body: JSON.stringify({})
+        })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 document.getElementById('ai-databases-loading').style.display = 'none';

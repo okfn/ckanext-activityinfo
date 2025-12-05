@@ -229,20 +229,6 @@ def job_status(job_id):
     return _finish_ok(ret)
 
 
-@activityinfo_bp.route('/api/databases')
-def api_databases():
-    """API endpoint to get databases as JSON for the resource form modal."""
-    try:
-        ai_databases = toolkit.get_action('act_info_get_databases')(
-            context={'user': toolkit.c.user},
-            data_dict={}
-        )
-    except ActivityInfoConnectionError as e:
-        return _finish_ok({'success': False, 'error': str(e)})
-    
-    return _finish_ok({'success': True, 'result': ai_databases})
-
-
 @activityinfo_bp.route('/api/database/<database_id>/forms')
 def api_forms(database_id):
     """API endpoint to get forms for a database as JSON."""
