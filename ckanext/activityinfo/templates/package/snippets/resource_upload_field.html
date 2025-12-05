@@ -1,0 +1,18 @@
+{% ckan_extends %}
+
+{% block url_type_select %}
+    {{ super() }}
+
+    {% if h.get_activity_info_api_key() %}
+    <button
+        type="button" 
+        class="btn btn-default"
+        id="btn-activity-info"
+        title="{{ _('Get Activity Info form data') }}">
+        <i class="fa fa-database"></i> {{ _('Get from Activity Info') }}
+    </button>
+
+    {% snippet "activity_info/snippets/modal_download.html" %}
+
+    {% endif %}
+{% endblock %}

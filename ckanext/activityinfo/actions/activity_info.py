@@ -9,6 +9,7 @@ from ckanext.activityinfo.exceptions import ActivityInfoConnectionError
 log = logging.getLogger(__name__)
 
 
+@toolkit.side_effect_free
 def act_info_get_databases(context, data_dict):
     '''
     Action function to get ActivityInfo databases for a user.
@@ -30,6 +31,7 @@ def act_info_get_databases(context, data_dict):
     return databases
 
 
+@toolkit.side_effect_free
 def act_info_get_forms(context, data_dict):
     '''
     Action function to get ActivityInfo forms for a database.
@@ -58,6 +60,7 @@ def act_info_get_forms(context, data_dict):
     return ret
 
 
+@toolkit.side_effect_free
 def act_info_get_form(context, data_dict):
     '''
     Action function to get a specific ActivityInfo form.
@@ -108,6 +111,7 @@ def act_start_download_job(context, data_dict):
     return job_info
 
 
+@toolkit.side_effect_free
 def act_info_get_job_status(context, data_dict):
     '''
     Action function to get the status of an ActivityInfo export job.
