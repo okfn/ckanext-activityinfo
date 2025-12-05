@@ -41,17 +41,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadDatabases() {
-        var csrf_field = $('meta[name=csrf_field_name]').attr('content');
-        var csrf_token = $('meta[name='+ csrf_field +']').attr('content');
         
-        fetch('/api/action/act_info_get_databases', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrf_token
-            },
-            body: JSON.stringify({})
-        })
+        fetch('/api/action/act_info_get_databases')
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 document.getElementById('ai-databases-loading').style.display = 'none';
@@ -90,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('ai-step-format').style.display = 'none';
         importBtn.disabled = true;
 
-        fetch('/activity-info/api/database/' + dbId + '/forms')
+        fetch('/api/action/act_info_get_forms?database_id=' + dbId)
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 document.getElementById('ai-forms-loading').style.display = 'none';
