@@ -81,6 +81,10 @@ def forms(database_id):
     for form in data['forms']:
         form['url'] = aic.get_url_to_form(form['id'])
 
+    # Add urls to each sub_form
+    for sub_form in data.get('sub_forms', []):
+        sub_form['url'] = aic.get_url_to_form(sub_form['id'])
+
     extra_vars = {
         'forms': data['forms'],
         'sub_forms': data.get('sub_forms', []),
@@ -223,3 +227,41 @@ def job_status(job_id):
         'download_url': full_download_url,
     }
     return _finish_ok(ret)
+
+
+@activityinfo_bp.route('/api/databases')
+def api_databases():
+    """API endpoint to get databases as JSON for the resource form modal."""
+    try:
+        ai_databases = toolkit.get_action('act_info_get_databases')(
+            context={'user': toolkit.c.user},
+            data_dict={}
+        )
+    except ActivityInfoConnectionError as e:
+        return _finish_ok({'success': False, 'error': str(e)})
+    
+    return _finish_ok({'success': True, 'result': ai_databases})
+
+
+@activityinfo_bp.route('/api/database/<database_id>/forms')
+def api_forms(database_id):
+    """API endpoint to get forms for a database as JSON."""
+    try:
+        data = toolkit.get_action('act_info_get_forms')(
+            context={'user': toolkit.c.user},
+            data_dict={'database_id': database_id}
+        )
+    except (ActivityInfoConnectionError, toolkit.ValidationError) as e:
+        return _finish_ok({'success': False, 'error': str(e)})
+    
+    return _finish_ok({
+        'success': True,
+        'result': {
+            'forms': data['forms'],
+            'sub_forms': data.get('sub_forms', []),
+            'database': {
+                'databaseId': data['database'].get('databaseId'),
+                'label': data['database'].get('label')
+            }
+        }
+    })
