@@ -3,6 +3,7 @@ activityinfo-js:
   output: ckanext-activityinfo/%(version)s-activityinfo.js
   contents:
     - js/activityinfo.js
+    - js/activityinfo-download.js
   extra:
     preload:
       - base/main
