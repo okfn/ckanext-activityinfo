@@ -1,191 +1,302 @@
-document.addEventListener('DOMContentLoaded', function() {
-    var btnActivityInfo = document.getElementById('btn-activity-info');
-    if (!btnActivityInfo) return;
+ckan.module('activityinfo-download', function($) {
+    return {
+        initialize: function() {
+            var self = this;
+            this.el = this.el[0]; // Get the DOM element
+            this.dbSelect = this.el.querySelector('#ai-database-select');
+            this.formSelect = this.el.querySelector('#ai-form-select');
+            this.formatSelect = this.el.querySelector('#ai-format-select');
+            this.importBtn = this.el.querySelector('#ai-import-btn');
+            this.progressDiv = this.el.querySelector('#ai-download-progress');
+            this.progressText = this.el.querySelector('#ai-progress-text');
+            this.errorDiv = this.el.querySelector('#ai-error');
+            this.radioBtn = document.getElementById('resource-url-activityinfo');
+            this.databasesLoaded = false;
+            
+            // Get CSRF token from the page
+            this.csrfToken = this.getCSRFToken();
 
-    var dbSelect = document.getElementById('ai-database-select');
-    var formSelect = document.getElementById('ai-form-select');
-    var formatSelect = document.getElementById('ai-format-select');
-    var importBtn = document.getElementById('ai-import-btn');
-    var progressDiv = document.getElementById('ai-download-progress');
-    var progressText = document.getElementById('ai-progress-text');
-    var errorDiv = document.getElementById('ai-error');
+            if (!this.dbSelect) {
+                console.error('ActivityInfo: Could not find database select element');
+                return;
+            }
 
-    // Open modal when button is clicked
-    btnActivityInfo.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        $('#activity-info-modal').modal('show');
-    });
-
-    // Load databases when modal opens
-    $('#activity-info-modal').on('show.bs.modal', function() {
-        resetModal();
-        loadDatabases();
-    });
-
-    function resetModal() {
-        dbSelect.innerHTML = '<option value="">-- Select database --</option>';
-        dbSelect.style.display = 'none';
-        document.getElementById('ai-databases-loading').style.display = 'block';
-        formSelect.innerHTML = '<option value="">-- Select form --</option>';
-        document.getElementById('ai-step-form').style.display = 'none';
-        document.getElementById('ai-step-format').style.display = 'none';
-        progressDiv.style.display = 'none';
-        errorDiv.style.display = 'none';
-        importBtn.disabled = true;
-    }
-
-    function showError(msg) {
-        errorDiv.textContent = msg;
-        errorDiv.style.display = 'block';
-    }
-
-    function loadDatabases() {
-        
-        fetch('/api/action/act_info_get_databases')
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                document.getElementById('ai-databases-loading').style.display = 'none';
-                if (!data.success) {
-                    showError(data.error || 'Failed to load databases');
-                    return;
-                }
-                data.result.forEach(function(db) {
-                    var opt = document.createElement('option');
-                    opt.value = db.databaseId;
-                    opt.textContent = db.label || db.databaseId;
-                    dbSelect.appendChild(opt);
+            // Load databases when ActivityInfo option is selected
+            if (this.radioBtn) {
+                this.radioBtn.addEventListener('change', function() {
+                    if (this.checked && !self.databasesLoaded) {
+                        self.loadDatabases();
+                    }
                 });
-                dbSelect.style.display = 'block';
-            })
-            .catch(function(e) {
-                document.getElementById('ai-databases-loading').style.display = 'none';
-                showError('Error loading databases: ' + e.message);
-            });
-    }
 
-    dbSelect.addEventListener('change', function() {
-        var dbId = this.value;
-        if (!dbId) {
-            document.getElementById('ai-step-form').style.display = 'none';
-            return;
-        }
-        loadForms(dbId);
-    });
-
-    function loadForms(dbId) {
-        formSelect.innerHTML = '<option value="">-- Select form --</option>';
-        formSelect.style.display = 'none';
-        document.getElementById('ai-forms-loading').style.display = 'block';
-        document.getElementById('ai-step-form').style.display = 'block';
-        document.getElementById('ai-step-format').style.display = 'none';
-        importBtn.disabled = true;
-
-        fetch('/api/action/act_info_get_forms?database_id=' + dbId)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                document.getElementById('ai-forms-loading').style.display = 'none';
-                if (!data.success) {
-                    showError(data.error || 'Failed to load forms');
-                    return;
+                // Also listen for click on the button that selects this radio
+                var aiButton = document.getElementById('btn-activity-info');
+                if (aiButton) {
+                    aiButton.addEventListener('click', function() {
+                        if (!self.databasesLoaded) {
+                            setTimeout(function() {
+                                self.loadDatabases();
+                            }, 100);
+                        }
+                    });
                 }
-                data.result.forms.forEach(function(form) {
-                    var opt = document.createElement('option');
-                    opt.value = form.id;
-                    opt.textContent = form.label || form.id;
-                    formSelect.appendChild(opt);
+
+                // If already checked on page load, load databases
+                if (this.radioBtn.checked) {
+                    this.loadDatabases();
+                }
+            }
+
+            this.dbSelect.addEventListener('change', function() {
+                self.onDatabaseChange();
+            });
+
+            this.formSelect.addEventListener('change', function() {
+                self.onFormChange();
+            });
+
+            this.importBtn.addEventListener('click', function() {
+                self.startImport();
+            });
+        },
+
+        getCSRFToken: function() {
+            var metaTag = document.querySelector('meta[name="csrf_token"]');
+            if (metaTag) {
+                return metaTag.getAttribute('content');
+            }
+            var match = document.cookie.match(/csrf_token=([^;]+)/);
+            if (match) {
+                return match[1];
+            }
+            var input = document.querySelector('input[name="_csrf_token"]');
+            if (input) {
+                return input.value;
+            }
+            return null;
+        },
+
+        getHeaders: function() {
+            var headers = {
+                'Content-Type': 'application/json',
+            };
+            if (this.csrfToken) {
+                headers['X-CSRFToken'] = this.csrfToken;
+            }
+            return headers;
+        },
+
+        resetForm: function() {
+            this.dbSelect.innerHTML = '<option value="">-- Select database --</option>';
+            this.formSelect.innerHTML = '<option value="">-- Select form --</option>';
+            this.el.querySelector('#ai-step-form').style.display = 'none';
+            this.el.querySelector('#ai-step-format').style.display = 'none';
+            this.el.querySelector('#ai-step-import').style.display = 'none';
+            this.progressDiv.style.display = 'none';
+            this.errorDiv.style.display = 'none';
+        },
+
+        showError: function(msg) {
+            console.error('ActivityInfo Error:', msg);
+            this.errorDiv.textContent = msg;
+            this.errorDiv.style.display = 'block';
+        },
+
+        loadDatabases: function() {
+            var self = this;
+            console.log('ActivityInfo: Loading databases...');
+            this.resetForm();
+            this.dbSelect.style.display = 'none';
+            this.el.querySelector('#ai-databases-loading').style.display = 'block';
+
+            fetch('/api/action/act_info_get_databases', {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify({})
+            })
+                .then(function(r) { 
+                    console.log('ActivityInfo: Got response', r.status);
+                    return r.json(); 
+                })
+                .then(function(data) {
+                    console.log('ActivityInfo: Parsed response', data);
+                    self.el.querySelector('#ai-databases-loading').style.display = 'none';
+                    if (!data.success) {
+                        var errorMsg = 'Failed to load databases';
+                        if (data.error) {
+                            errorMsg = data.error.message || data.error.__type || JSON.stringify(data.error);
+                        }
+                        self.showError(errorMsg);
+                        return;
+                    }
+                    if (!data.result || data.result.length === 0) {
+                        self.showError('No databases found. Please check your ActivityInfo API key.');
+                        return;
+                    }
+                    data.result.forEach(function(db) {
+                        var opt = document.createElement('option');
+                        opt.value = db.databaseId;
+                        opt.textContent = db.label || db.databaseId;
+                        self.dbSelect.appendChild(opt);
+                    });
+                    self.dbSelect.style.display = 'block';
+                    self.databasesLoaded = true;
+                })
+                .catch(function(e) {
+                    console.error('ActivityInfo: Fetch error', e);
+                    self.el.querySelector('#ai-databases-loading').style.display = 'none';
+                    self.showError('Error loading databases: ' + e.message);
                 });
-                formSelect.style.display = 'block';
-            })
-            .catch(function(e) {
-                document.getElementById('ai-forms-loading').style.display = 'none';
-                showError('Error loading forms: ' + e.message);
-            });
-    }
+        },
 
-    formSelect.addEventListener('change', function() {
-        if (this.value) {
-            document.getElementById('ai-step-format').style.display = 'block';
-            importBtn.disabled = false;
-        } else {
-            document.getElementById('ai-step-format').style.display = 'none';
-            importBtn.disabled = true;
+        onDatabaseChange: function() {
+            var dbId = this.dbSelect.value;
+            if (!dbId) {
+                this.el.querySelector('#ai-step-form').style.display = 'none';
+                this.el.querySelector('#ai-step-format').style.display = 'none';
+                this.el.querySelector('#ai-step-import').style.display = 'none';
+                return;
+            }
+            this.loadForms(dbId);
+        },
+
+        loadForms: function(dbId) {
+            var self = this;
+            this.formSelect.innerHTML = '<option value="">-- Select form --</option>';
+            this.formSelect.style.display = 'none';
+            this.el.querySelector('#ai-forms-loading').style.display = 'block';
+            this.el.querySelector('#ai-step-form').style.display = 'block';
+            this.el.querySelector('#ai-step-format').style.display = 'none';
+            this.el.querySelector('#ai-step-import').style.display = 'none';
+
+            fetch('/api/action/act_info_get_forms', {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify({ database_id: dbId })
+            })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    self.el.querySelector('#ai-forms-loading').style.display = 'none';
+                    if (!data.success) {
+                        var errorMsg = 'Failed to load forms';
+                        if (data.error) {
+                            errorMsg = data.error.message || data.error.__type || JSON.stringify(data.error);
+                        }
+                        self.showError(errorMsg);
+                        return;
+                    }
+                    data.result.forms.forEach(function(form) {
+                        var opt = document.createElement('option');
+                        opt.value = form.id;
+                        opt.textContent = form.label || form.id;
+                        self.formSelect.appendChild(opt);
+                    });
+                    self.formSelect.style.display = 'block';
+                })
+                .catch(function(e) {
+                    self.el.querySelector('#ai-forms-loading').style.display = 'none';
+                    self.showError('Error loading forms: ' + e.message);
+                });
+        },
+
+        onFormChange: function() {
+            if (this.formSelect.value) {
+                this.el.querySelector('#ai-step-format').style.display = 'block';
+                this.el.querySelector('#ai-step-import').style.display = 'block';
+            } else {
+                this.el.querySelector('#ai-step-format').style.display = 'none';
+                this.el.querySelector('#ai-step-import').style.display = 'none';
+            }
+        },
+
+        startImport: function() {
+            var self = this;
+            var formId = this.formSelect.value;
+            var format = this.formatSelect.value;
+            if (!formId) return;
+
+            this.importBtn.disabled = true;
+            this.progressDiv.style.display = 'block';
+            this.progressText.textContent = 'Starting export job...';
+
+            fetch('/activity-info/download/' + formId + '.' + format.toLowerCase(), {
+                method: 'GET',
+                headers: this.getHeaders()
+            })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.success) {
+                        self.showError('Failed to start export');
+                        self.progressDiv.style.display = 'none';
+                        self.importBtn.disabled = false;
+                        return;
+                    }
+                    self.pollJobStatus(data.job_id);
+                })
+                .catch(function(e) {
+                    self.showError('Error: ' + e.message);
+                    self.progressDiv.style.display = 'none';
+                    self.importBtn.disabled = false;
+                });
+        },
+
+        pollJobStatus: function(jobId) {
+            var self = this;
+            fetch('/activity-info/job-status/' + jobId, {
+                method: 'GET',
+                headers: this.getHeaders()
+            })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.success) {
+                        self.showError('Job failed');
+                        self.progressDiv.style.display = 'none';
+                        self.importBtn.disabled = false;
+                        return;
+                    }
+                    var state = data.result.state;
+                    if (state === 'completed' && data.download_url) {
+                        self.progressText.textContent = 'Download ready!';
+                        
+                        var linkRadio = document.getElementById('resource-url-link');
+                        if (linkRadio) {
+                            linkRadio.checked = true;
+                        }
+                        
+                        var urlField = document.getElementById('field-resource-url') || document.querySelector('input[name="url"]');
+                        if (urlField) {
+                            urlField.value = data.download_url;
+                            urlField.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                        
+                        var nameField = document.getElementById('field-name');
+                        if (nameField && !nameField.value) {
+                            var selectedForm = self.formSelect.options[self.formSelect.selectedIndex];
+                            nameField.value = selectedForm.textContent;
+                        }
+                        
+                        var formatField = document.getElementById('field-format');
+                        if (formatField) {
+                            formatField.value = self.formatSelect.value;
+                        }
+
+                        self.progressDiv.style.display = 'none';
+                        self.importBtn.disabled = false;
+                    } else if (state === 'failed') {
+                        self.showError('Export job failed');
+                        self.progressDiv.style.display = 'none';
+                        self.importBtn.disabled = false;
+                    } else {
+                        var pct = data.result.percentComplete || 0;
+                        self.progressText.textContent = 'Exporting... ' + pct + '%';
+                        setTimeout(function() { self.pollJobStatus(jobId); }, 1500);
+                    }
+                })
+                .catch(function(e) {
+                    self.showError('Error checking status: ' + e.message);
+                    self.progressDiv.style.display = 'none';
+                    self.importBtn.disabled = false;
+                });
         }
-    });
-
-    importBtn.addEventListener('click', function() {
-        var formId = formSelect.value;
-        var format = formatSelect.value;
-        if (!formId) return;
-
-        importBtn.disabled = true;
-        progressDiv.style.display = 'block';
-        progressText.textContent = 'Starting export job...';
-
-        fetch('/activity-info/download/' + formId + '.' + format.toLowerCase())
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (!data.success) {
-                    showError('Failed to start export');
-                    progressDiv.style.display = 'none';
-                    importBtn.disabled = false;
-                    return;
-                }
-                pollJobStatus(data.job_id);
-            })
-            .catch(function(e) {
-                showError('Error: ' + e.message);
-                progressDiv.style.display = 'none';
-                importBtn.disabled = false;
-            });
-    });
-
-    function pollJobStatus(jobId) {
-        fetch('/activity-info/job-status/' + jobId)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (!data.success) {
-                    showError('Job failed');
-                    progressDiv.style.display = 'none';
-                    importBtn.disabled = false;
-                    return;
-                }
-                var state = data.result.state;
-                if (state === 'completed' && data.download_url) {
-                    progressText.textContent = 'Download ready!';
-                    // Set the URL in the resource form
-                    var urlField = document.getElementById('field-resource-url') || document.querySelector('input[name="url"]');
-                    if (urlField) {
-                        urlField.value = data.download_url;
-                        urlField.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                    // Set name from form label if name field is empty
-                    var nameField = document.getElementById('field-name');
-                    if (nameField && !nameField.value) {
-                        var selectedForm = formSelect.options[formSelect.selectedIndex];
-                        nameField.value = selectedForm.textContent;
-                    }
-                    // Set format field
-                    var formatField = document.getElementById('field-format');
-                    if (formatField) {
-                        formatField.value = formatSelect.value;
-                    }
-                    // Close modal
-                    $('#activity-info-modal').modal('hide');
-                } else if (state === 'failed') {
-                    showError('Export job failed');
-                    progressDiv.style.display = 'none';
-                    importBtn.disabled = false;
-                } else {
-                    var pct = data.result.percentComplete || 0;
-                    progressText.textContent = 'Exporting... ' + pct + '%';
-                    setTimeout(function() { pollJobStatus(jobId); }, 1500);
-                }
-            })
-            .catch(function(e) {
-                showError('Error checking status: ' + e.message);
-                progressDiv.style.display = 'none';
-                importBtn.disabled = false;
-            });
-    }
+    };
 });

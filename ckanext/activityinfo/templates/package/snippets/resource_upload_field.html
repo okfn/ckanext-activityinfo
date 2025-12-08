@@ -6,13 +6,70 @@
     {% if h.get_activity_info_api_key() %}
     <button
         type="button" 
-        class="btn btn-default"
+        class="btn btn-secondary"
         id="btn-activity-info"
-        title="{{ _('Get Activity Info form data') }}">
-        <i class="fa fa-database"></i> {{ _('Get from Activity Info') }}
+        aria-label="{{ _('Import data from Activity Info') }}"
+        data-bs-title="{{ _('Import data from Activity Info') }}" 
+        data-bs-toggle="tooltip"
+        onclick="
+            document.getElementById('resource-url-activityinfo').checked = true;
+        ">
+        <i class="fa fa-database"></i> {{ _('Activity Info') }}
     </button>
+    {% endif %}
+{% endblock %}
 
-    {% snippet "activity_info/snippets/modal_download.html" %}
+{% block url_type_fields %}
+    {{ super() }}
 
+    {% if h.get_activity_info_api_key() %}
+    <input type="radio" id="resource-url-activityinfo" name="url_type" value="activityinfo" {{
+        'checked' if data.get('url_type') == 'activityinfo' else '' }}>
+    <div class="select-type" data-module="activityinfo-download">
+        {{ remove_button() }}
+        <label class="form-label">{{ _('Activity Info') }}</label>
+        
+        <!-- Step 1: Select Database -->
+        <div id="ai-step-database" class="control-group">
+            <div id="ai-databases-loading"><i class="fa fa-spinner fa-spin"></i> {{ _('Loading databases...') }}</div>
+            <select id="ai-database-select" class="form-control" style="display:none;">
+                <option value="">-- {{ _('Select database') }} --</option>
+            </select>
+        </div>
+
+        <!-- Step 2: Select Form -->
+        <div id="ai-step-form" class="control-group" style="display:none;">
+            <div id="ai-forms-loading" style="display:none;"><i class="fa fa-spinner fa-spin"></i> {{ _('Loading forms...') }}</div>
+            <select id="ai-form-select" class="form-control" style="display:none;">
+                <option value="">-- {{ _('Select form') }} --</option>
+            </select>
+        </div>
+
+        <!-- Step 3: Select Format -->
+        <div id="ai-step-format" class="control-group" style="display:none;">
+            <select id="ai-format-select" class="form-control">
+                <option value="CSV">CSV</option>
+                <option value="XLSX">XLSX</option>
+            </select>
+        </div>
+
+        <!-- Import Button -->
+        <div id="ai-step-import" class="control-group" style="display:none;">
+            <button type="button" class="btn btn-primary" id="ai-import-btn">
+                <i class="fa fa-download"></i> {{ _('Import') }}
+            </button>
+        </div>
+
+        <!-- Download Progress -->
+        <div id="ai-download-progress" class="control-group" style="display:none;">
+            <div class="alert alert-info">
+                <i class="fa fa-spinner fa-spin"></i> 
+                <span id="ai-progress-text">{{ _('Starting export...') }}</span>
+            </div>
+        </div>
+
+        <!-- Error display -->
+        <div id="ai-error" class="alert alert-danger" style="display:none;"></div>
+    </div>
     {% endif %}
 {% endblock %}
