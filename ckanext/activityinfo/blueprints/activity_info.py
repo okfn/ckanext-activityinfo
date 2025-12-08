@@ -81,6 +81,10 @@ def forms(database_id):
     for form in data['forms']:
         form['url'] = aic.get_url_to_form(form['id'])
 
+    # Add urls to each sub_form
+    for sub_form in data.get('sub_forms', []):
+        sub_form['url'] = aic.get_url_to_form(sub_form['id'])
+
     extra_vars = {
         'forms': data['forms'],
         'sub_forms': data.get('sub_forms', []),

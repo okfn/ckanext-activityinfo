@@ -11,3 +11,7 @@
   content: "";
   display: inline-block;
 }
+
+.control-group {
+    margin-bottom: 15px;
+}
