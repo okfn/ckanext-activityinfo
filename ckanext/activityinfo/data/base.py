@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 class ActivityInfoClient:
     """Base class for ActivityInfo API client."""
 
-    def __init__(self, base_url="https://www.activityinfo.org", api_key=None, debug=True):
+    def __init__(self, base_url="https://www.activityinfo.org", api_key=None, debug=False):
         self.base_url = base_url
         self.api_key = api_key
         self.debug = debug
@@ -17,7 +17,7 @@ class ActivityInfoClient:
         if self.debug:
             here = Path(__file__).parent
             self.responses_debug_dir = here / "responses_debug_dir"
-            self.responses_debug_dir.mkdir(exist_ok=True)
+
         log.debug(f"ActivityInfoClient initialized with base_url: {self.base_url}, debug: {self.debug}")
 
     def get_user_auth_headers(self):
@@ -39,9 +39,12 @@ class ActivityInfoClient:
         log.info(f"ActivityInfoClient GET request to {endpoint} completed")
         if self.debug:
             # create all folders in path
-            Path(self.responses_debug_dir / endpoint).mkdir(parents=True, exist_ok=True)
-            with open(self.responses_debug_dir / endpoint / "response.json", "w") as f:
-                f.write(response.text)
+            try:
+                Path(self.responses_debug_dir / endpoint).mkdir(parents=True, exist_ok=True)
+                with open(self.responses_debug_dir / endpoint / "response.json", "w") as f:
+                    f.write(response.text)
+            except Exception as e:
+                log.debug(f"Failed to write debug response for {endpoint}: {e}")
         return response.json()
 
     def get_databases(self):
