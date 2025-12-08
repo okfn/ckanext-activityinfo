@@ -23,14 +23,59 @@
     {{ super() }}
 
     {% if h.get_activity_info_api_key() %}
+    {# Use url_type=activityinfo for the radio, but it will be converted to url_type=upload on save #}
+    {% set is_activityinfo = data.get('resource_type') == 'activityinfo' %}
     <input type="radio" id="resource-url-activityinfo" name="url_type" value="activityinfo" {{
-        'checked' if data.get('url_type') == 'activityinfo' else '' }}>
+        'checked' if is_activityinfo else '' }}>
     <div class="select-type" data-module="activityinfo-download">
         {{ remove_button() }}
         <label class="form-label">{{ _('Activity Info') }}</label>
         
+        <!-- Hidden fields to store selection for form submission -->
+        <input type="hidden" name="activityinfo_database_id" id="ai-database-id-field" value="{{ data.get('activityinfo_database_id', '') }}">
+        <input type="hidden" name="activityinfo_form_id" id="ai-form-id-field" value="{{ data.get('activityinfo_form_id', '') }}">
+        <input type="hidden" name="activityinfo_format" id="ai-format-field" value="{{ data.get('activityinfo_format', 'csv') }}">
+        <input type="hidden" name="activityinfo_form_label" id="ai-form-label-field" value="{{ data.get('activityinfo_form_label', '') }}">
+
+        <!-- Show status if resource already exists and is processing -->
+        {% if data.get('id') and data.get('activityinfo_status') %}
+            {% set status = data.get('activityinfo_status') %}
+            {% set progress = data.get('activityinfo_progress', 0) %}
+            {% set error = data.get('activityinfo_error', '') %}
+            
+            <div id="ai-existing-status" class="control-group" style="margin-bottom: 15px;">
+                {% if status == 'pending' %}
+                    <div class="alert alert-warning">
+                        <i class="fa fa-clock-o"></i>
+                        {{ _('Download queued. The file will be downloaded in the background.') }}
+                    </div>
+                {% elif status == 'exporting' %}
+                    <div class="alert alert-info">
+                        <i class="fa fa-spinner fa-spin"></i>
+                        {{ _('Exporting from ActivityInfo...') }} {{ progress }}%
+                    </div>
+                {% elif status == 'downloading' %}
+                    <div class="alert alert-info">
+                        <i class="fa fa-download"></i>
+                        {{ _('Downloading file...') }}
+                    </div>
+                {% elif status == 'complete' %}
+                    <div class="alert alert-success">
+                        <i class="fa fa-check"></i>
+                        {{ _('Download complete. File has been uploaded to CKAN.') }}
+                    </div>
+                {% elif status == 'error' %}
+                    <div class="alert alert-danger">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        {{ _('Error:') }} {{ error }}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
         <!-- Step 1: Select Database -->
         <div id="ai-step-database" class="control-group">
+            <label class="form-label">{{ _('Database') }}</label>
             <div id="ai-databases-loading"><i class="fa fa-spinner fa-spin"></i> {{ _('Loading databases...') }}</div>
             <select id="ai-database-select" class="form-control" style="display:none;">
                 <option value="">-- {{ _('Select database') }} --</option>
@@ -39,6 +84,7 @@
 
         <!-- Step 2: Select Form -->
         <div id="ai-step-form" class="control-group" style="display:none;">
+            <label class="form-label">{{ _('Form') }}</label>
             <div id="ai-forms-loading" style="display:none;"><i class="fa fa-spinner fa-spin"></i> {{ _('Loading forms...') }}</div>
             <select id="ai-form-select" class="form-control" style="display:none;">
                 <option value="">-- {{ _('Select form') }} --</option>
@@ -47,25 +93,17 @@
 
         <!-- Step 3: Select Format -->
         <div id="ai-step-format" class="control-group" style="display:none;">
+            <label class="form-label">{{ _('Format') }}</label>
             <select id="ai-format-select" class="form-control">
-                <option value="CSV">CSV</option>
-                <option value="XLSX">XLSX</option>
+                <option value="csv">CSV</option>
+                <option value="xlsx">XLSX</option>
             </select>
         </div>
 
-        <!-- Import Button -->
-        <div id="ai-step-import" class="control-group" style="display:none;">
-            <button type="button" class="btn btn-primary" id="ai-import-btn">
-                <i class="fa fa-download"></i> {{ _('Import') }}
-            </button>
-        </div>
-
-        <!-- Download Progress -->
-        <div id="ai-download-progress" class="control-group" style="display:none;">
-            <div class="alert alert-info">
-                <i class="fa fa-spinner fa-spin"></i> 
-                <span id="ai-progress-text">{{ _('Starting export...') }}</span>
-            </div>
+        <!-- Info message -->
+        <div id="ai-info" class="alert alert-info" style="display:none; margin-top:15px;">
+            <i class="fa fa-info-circle"></i> 
+            <span id="ai-info-text">{{ _('The data will be downloaded from ActivityInfo in the background after you save.') }}</span>
         </div>
 
         <!-- Error display -->

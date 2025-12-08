@@ -233,3 +233,17 @@ class ActivityInfoClient:
         response = requests.get(download_url, headers=headers)
         response.raise_for_status()
         return response.content
+
+    def download_file(self, url: str) -> bytes:
+        """Download a file from ActivityInfo.
+
+        Args:
+            url: The download URL
+
+        Returns:
+            The file contents as bytes
+        """
+        headers = {'Authorization': f'Bearer {self.api_key}'}
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        return response.content

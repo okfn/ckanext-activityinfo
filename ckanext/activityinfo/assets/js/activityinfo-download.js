@@ -2,18 +2,21 @@ ckan.module('activityinfo-download', function($) {
     return {
         initialize: function() {
             var self = this;
-            this.el = this.el[0]; // Get the DOM element
+            this.el = this.el[0];
             this.dbSelect = this.el.querySelector('#ai-database-select');
             this.formSelect = this.el.querySelector('#ai-form-select');
             this.formatSelect = this.el.querySelector('#ai-format-select');
-            this.importBtn = this.el.querySelector('#ai-import-btn');
-            this.progressDiv = this.el.querySelector('#ai-download-progress');
-            this.progressText = this.el.querySelector('#ai-progress-text');
             this.errorDiv = this.el.querySelector('#ai-error');
+            this.infoDiv = this.el.querySelector('#ai-info');
             this.radioBtn = document.getElementById('resource-url-activityinfo');
-            this.databasesLoaded = false;
             
-            // Get CSRF token from the page
+            // Hidden fields for form submission
+            this.dbIdField = this.el.querySelector('#ai-database-id-field');
+            this.formIdField = this.el.querySelector('#ai-form-id-field');
+            this.formatField = this.el.querySelector('#ai-format-field');
+            this.formLabelField = this.el.querySelector('#ai-form-label-field');
+            
+            this.databasesLoaded = false;
             this.csrfToken = this.getCSRFToken();
 
             if (!this.dbSelect) {
@@ -29,7 +32,6 @@ ckan.module('activityinfo-download', function($) {
                     }
                 });
 
-                // Also listen for click on the button that selects this radio
                 var aiButton = document.getElementById('btn-activity-info');
                 if (aiButton) {
                     aiButton.addEventListener('click', function() {
@@ -41,7 +43,6 @@ ckan.module('activityinfo-download', function($) {
                     });
                 }
 
-                // If already checked on page load, load databases
                 if (this.radioBtn.checked) {
                     this.loadDatabases();
                 }
@@ -55,45 +56,25 @@ ckan.module('activityinfo-download', function($) {
                 self.onFormChange();
             });
 
-            this.importBtn.addEventListener('click', function() {
-                self.startImport();
+            this.formatSelect.addEventListener('change', function() {
+                self.onFormatChange();
             });
         },
 
         getCSRFToken: function() {
             var metaTag = document.querySelector('meta[name="csrf_token"]');
-            if (metaTag) {
-                return metaTag.getAttribute('content');
-            }
+            if (metaTag) return metaTag.getAttribute('content');
             var match = document.cookie.match(/csrf_token=([^;]+)/);
-            if (match) {
-                return match[1];
-            }
+            if (match) return match[1];
             var input = document.querySelector('input[name="_csrf_token"]');
-            if (input) {
-                return input.value;
-            }
+            if (input) return input.value;
             return null;
         },
 
         getHeaders: function() {
-            var headers = {
-                'Content-Type': 'application/json',
-            };
-            if (this.csrfToken) {
-                headers['X-CSRFToken'] = this.csrfToken;
-            }
+            var headers = { 'Content-Type': 'application/json' };
+            if (this.csrfToken) headers['X-CSRFToken'] = this.csrfToken;
             return headers;
-        },
-
-        resetForm: function() {
-            this.dbSelect.innerHTML = '<option value="">-- Select database --</option>';
-            this.formSelect.innerHTML = '<option value="">-- Select form --</option>';
-            this.el.querySelector('#ai-step-form').style.display = 'none';
-            this.el.querySelector('#ai-step-format').style.display = 'none';
-            this.el.querySelector('#ai-step-import').style.display = 'none';
-            this.progressDiv.style.display = 'none';
-            this.errorDiv.style.display = 'none';
         },
 
         showError: function(msg) {
@@ -102,30 +83,51 @@ ckan.module('activityinfo-download', function($) {
             this.errorDiv.style.display = 'block';
         },
 
+        hideError: function() {
+            this.errorDiv.style.display = 'none';
+        },
+
+        updateHiddenFields: function() {
+            this.dbIdField.value = this.dbSelect.value || '';
+            this.formIdField.value = this.formSelect.value || '';
+            this.formatField.value = this.formatSelect.value || 'csv';
+            
+            var selectedForm = this.formSelect.options[this.formSelect.selectedIndex];
+            this.formLabelField.value = selectedForm && selectedForm.value ? selectedForm.textContent.trim() : '';
+            
+            // Update resource name field if empty
+            var nameField = document.getElementById('field-name');
+            if (nameField && !nameField.value && this.formLabelField.value) {
+                nameField.value = this.formLabelField.value;
+            }
+            
+            // Update format field
+            var formatField = document.getElementById('field-format');
+            if (formatField && this.formatSelect.value) {
+                formatField.value = this.formatSelect.value.toUpperCase();
+            }
+        },
+
         loadDatabases: function() {
             var self = this;
-            console.log('ActivityInfo: Loading databases...');
-            this.resetForm();
+            this.hideError();
+            this.dbSelect.innerHTML = '<option value="">-- Select database --</option>';
             this.dbSelect.style.display = 'none';
             this.el.querySelector('#ai-databases-loading').style.display = 'block';
+            this.el.querySelector('#ai-step-form').style.display = 'none';
+            this.el.querySelector('#ai-step-format').style.display = 'none';
+            this.infoDiv.style.display = 'none';
 
             fetch('/api/action/act_info_get_databases', {
                 method: 'POST',
                 headers: this.getHeaders(),
                 body: JSON.stringify({})
             })
-                .then(function(r) { 
-                    console.log('ActivityInfo: Got response', r.status);
-                    return r.json(); 
-                })
+                .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    console.log('ActivityInfo: Parsed response', data);
                     self.el.querySelector('#ai-databases-loading').style.display = 'none';
                     if (!data.success) {
-                        var errorMsg = 'Failed to load databases';
-                        if (data.error) {
-                            errorMsg = data.error.message || data.error.__type || JSON.stringify(data.error);
-                        }
+                        var errorMsg = data.error ? (data.error.message || data.error.__type || JSON.stringify(data.error)) : 'Failed to load databases';
                         self.showError(errorMsg);
                         return;
                     }
@@ -141,9 +143,14 @@ ckan.module('activityinfo-download', function($) {
                     });
                     self.dbSelect.style.display = 'block';
                     self.databasesLoaded = true;
+                    
+                    // Restore selection if editing
+                    if (self.dbIdField.value) {
+                        self.dbSelect.value = self.dbIdField.value;
+                        self.onDatabaseChange();
+                    }
                 })
                 .catch(function(e) {
-                    console.error('ActivityInfo: Fetch error', e);
                     self.el.querySelector('#ai-databases-loading').style.display = 'none';
                     self.showError('Error loading databases: ' + e.message);
                 });
@@ -151,10 +158,12 @@ ckan.module('activityinfo-download', function($) {
 
         onDatabaseChange: function() {
             var dbId = this.dbSelect.value;
+            this.updateHiddenFields();
+            
             if (!dbId) {
                 this.el.querySelector('#ai-step-form').style.display = 'none';
                 this.el.querySelector('#ai-step-format').style.display = 'none';
-                this.el.querySelector('#ai-step-import').style.display = 'none';
+                this.infoDiv.style.display = 'none';
                 return;
             }
             this.loadForms(dbId);
@@ -162,12 +171,13 @@ ckan.module('activityinfo-download', function($) {
 
         loadForms: function(dbId) {
             var self = this;
+            this.hideError();
             this.formSelect.innerHTML = '<option value="">-- Select form --</option>';
             this.formSelect.style.display = 'none';
             this.el.querySelector('#ai-forms-loading').style.display = 'block';
             this.el.querySelector('#ai-step-form').style.display = 'block';
             this.el.querySelector('#ai-step-format').style.display = 'none';
-            this.el.querySelector('#ai-step-import').style.display = 'none';
+            this.infoDiv.style.display = 'none';
 
             fetch('/api/action/act_info_get_forms', {
                 method: 'POST',
@@ -178,10 +188,7 @@ ckan.module('activityinfo-download', function($) {
                 .then(function(data) {
                     self.el.querySelector('#ai-forms-loading').style.display = 'none';
                     if (!data.success) {
-                        var errorMsg = 'Failed to load forms';
-                        if (data.error) {
-                            errorMsg = data.error.message || data.error.__type || JSON.stringify(data.error);
-                        }
+                        var errorMsg = data.error ? (data.error.message || data.error.__type || JSON.stringify(data.error)) : 'Failed to load forms';
                         self.showError(errorMsg);
                         return;
                     }
@@ -192,6 +199,12 @@ ckan.module('activityinfo-download', function($) {
                         self.formSelect.appendChild(opt);
                     });
                     self.formSelect.style.display = 'block';
+                    
+                    // Restore selection if editing
+                    if (self.formIdField.value) {
+                        self.formSelect.value = self.formIdField.value;
+                        self.onFormChange();
+                    }
                 })
                 .catch(function(e) {
                     self.el.querySelector('#ai-forms-loading').style.display = 'none';
@@ -200,103 +213,24 @@ ckan.module('activityinfo-download', function($) {
         },
 
         onFormChange: function() {
+            this.updateHiddenFields();
+            
             if (this.formSelect.value) {
                 this.el.querySelector('#ai-step-format').style.display = 'block';
-                this.el.querySelector('#ai-step-import').style.display = 'block';
+                this.infoDiv.style.display = 'block';
+                
+                // Restore format selection if editing
+                if (this.formatField.value) {
+                    this.formatSelect.value = this.formatField.value;
+                }
             } else {
                 this.el.querySelector('#ai-step-format').style.display = 'none';
-                this.el.querySelector('#ai-step-import').style.display = 'none';
+                this.infoDiv.style.display = 'none';
             }
         },
 
-        startImport: function() {
-            var self = this;
-            var formId = this.formSelect.value;
-            var format = this.formatSelect.value;
-            if (!formId) return;
-
-            this.importBtn.disabled = true;
-            this.progressDiv.style.display = 'block';
-            this.progressText.textContent = 'Starting export job...';
-
-            fetch('/activity-info/download/' + formId + '.' + format.toLowerCase(), {
-                method: 'GET',
-                headers: this.getHeaders()
-            })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (!data.success) {
-                        self.showError('Failed to start export');
-                        self.progressDiv.style.display = 'none';
-                        self.importBtn.disabled = false;
-                        return;
-                    }
-                    self.pollJobStatus(data.job_id);
-                })
-                .catch(function(e) {
-                    self.showError('Error: ' + e.message);
-                    self.progressDiv.style.display = 'none';
-                    self.importBtn.disabled = false;
-                });
-        },
-
-        pollJobStatus: function(jobId) {
-            var self = this;
-            fetch('/activity-info/job-status/' + jobId, {
-                method: 'GET',
-                headers: this.getHeaders()
-            })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (!data.success) {
-                        self.showError('Job failed');
-                        self.progressDiv.style.display = 'none';
-                        self.importBtn.disabled = false;
-                        return;
-                    }
-                    var state = data.result.state;
-                    if (state === 'completed' && data.download_url) {
-                        self.progressText.textContent = 'Download ready!';
-                        
-                        var linkRadio = document.getElementById('resource-url-link');
-                        if (linkRadio) {
-                            linkRadio.checked = true;
-                        }
-                        
-                        var urlField = document.getElementById('field-resource-url') || document.querySelector('input[name="url"]');
-                        if (urlField) {
-                            urlField.value = data.download_url;
-                            urlField.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                        
-                        var nameField = document.getElementById('field-name');
-                        if (nameField && !nameField.value) {
-                            var selectedForm = self.formSelect.options[self.formSelect.selectedIndex];
-                            nameField.value = selectedForm.textContent;
-                        }
-                        
-                        var formatField = document.getElementById('field-format');
-                        if (formatField) {
-                            formatField.value = self.formatSelect.value;
-                        }
-
-                        self.progressDiv.style.display = 'none';
-                        self.importBtn.disabled = false;
-                    } else if (state === 'failed') {
-                        self.showError('Export job failed');
-                        self.progressDiv.style.display = 'none';
-                        self.importBtn.disabled = false;
-                    } else {
-                        var pct = data.result.percentComplete || 0;
-                        self.progressText.textContent = 'Exporting... ' + pct + '%';
-                        setTimeout(function() { self.pollJobStatus(jobId); }, 1500);
-                    }
-                })
-                .catch(function(e) {
-                    self.showError('Error checking status: ' + e.message);
-                    self.progressDiv.style.display = 'none';
-                    self.importBtn.disabled = false;
-                });
+        onFormatChange: function() {
+            this.updateHiddenFields();
         }
     };
 });
