@@ -3,12 +3,16 @@ ckan.module('activityinfo-download', function($) {
         initialize: function() {
             var self = this;
             this.el = this.el[0];
+            // container div for all fields activity_info_new_div
+            this.container_div = this.el.querySelector('#activity_info_new_div');
             this.dbSelect = this.el.querySelector('#ai-database-select');
             this.formSelect = this.el.querySelector('#ai-form-select');
             this.formatSelect = this.el.querySelector('#ai-format-select');
             this.errorDiv = this.el.querySelector('#ai-error');
             this.infoDiv = this.el.querySelector('#ai-info');
             this.radioBtn = document.getElementById('resource-url-activityinfo');
+            // Include resource description to include Activity Info info
+            this.descriptionField = document.getElementById('field-description');
             
             // Hidden fields for form submission
             this.dbIdField = this.el.querySelector('#ai-database-id-field');
@@ -28,6 +32,7 @@ ckan.module('activityinfo-download', function($) {
             if (this.radioBtn) {
                 this.radioBtn.addEventListener('change', function() {
                     if (this.checked && !self.databasesLoaded) {
+                        self.container_div.style.display = 'block';
                         self.loadDatabases();
                     }
                 });
@@ -36,6 +41,7 @@ ckan.module('activityinfo-download', function($) {
                 if (aiButton) {
                     aiButton.addEventListener('click', function() {
                         if (!self.databasesLoaded) {
+                            self.container_div.style.display = 'block';
                             setTimeout(function() {
                                 self.loadDatabases();
                             }, 100);
@@ -105,6 +111,17 @@ ckan.module('activityinfo-download', function($) {
             var formatField = document.getElementById('field-format');
             if (formatField && this.formatSelect.value) {
                 formatField.value = this.formatSelect.value.toUpperCase();
+            }
+
+            // Update description field with ActivityInfo info
+            if (this.descriptionField) {
+                var dbLabel = this.dbSelect.options[this.dbSelect.selectedIndex] && this.dbSelect.value ? this.dbSelect.options[this.dbSelect.selectedIndex].textContent.trim() : '';
+                var formLabel = selectedForm && selectedForm.value ? selectedForm.textContent.trim() : '';
+                var desc = "This resource was downloaded from ActivityInfo.";
+                if (dbLabel || formLabel) {
+                    desc += " Database: " + (dbLabel || "-") + ", Form: " + (formLabel || "-");
+                }
+                this.descriptionField.value = desc;
             }
         },
 

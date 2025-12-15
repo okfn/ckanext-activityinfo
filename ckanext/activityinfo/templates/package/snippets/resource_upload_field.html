@@ -1,9 +1,22 @@
 {% ckan_extends %}
 
+{% set user_with_ai_api_key = h.get_activity_info_api_key() %}
+{% set is_activityinfo = data.get('resource_type') == 'activityinfo' %}
+
+{% macro remove_button_activityinfo(js='') %}
+  <button type="button" class="btn btn-danger btn-remove-url"
+    onclick="
+      document.getElementById('resource-url-none').checked = true;
+      document.getElementById('{{ first_button }}').focus();
+      document.getElementById('activity_info_new_div').style.display = 'none';
+      {{ js }}
+    ">{{ _('Remove') }}</button>
+{% endmacro %}
+
 {% block url_type_select %}
     {{ super() }}
 
-    {% if h.get_activity_info_api_key() %}
+    {% if user_with_ai_api_key %}
     <button
         type="button" 
         class="btn btn-secondary"
@@ -13,6 +26,7 @@
         data-bs-toggle="tooltip"
         onclick="
             document.getElementById('resource-url-activityinfo').checked = true;
+            document.getElementById('activity_info_new_div').style.display = 'block';
         ">
         <i class="fa fa-database"></i> {{ _('Activity Info') }}
     </button>
@@ -20,29 +34,16 @@
 {% endblock %}
 
 {% block url_type_fields %}
-    {{ super() }}
 
-    {% if h.get_activity_info_api_key() %}
-    {# Use url_type=activityinfo for the radio, but it will be converted to url_type=upload on save #}
-    {% set is_activityinfo = data.get('resource_type') == 'activityinfo' %}
-    <input type="radio" id="resource-url-activityinfo" name="url_type" value="activityinfo" {{
-        'checked' if is_activityinfo else '' }}>
-    <div class="select-type" data-module="activityinfo-download">
-        {{ remove_button() }}
-        <label class="form-label">{{ _('Activity Info') }}</label>
-        
-        <!-- Hidden fields to store selection for form submission -->
-        <input type="hidden" name="activityinfo_database_id" id="ai-database-id-field" value="{{ data.get('activityinfo_database_id', '') }}">
-        <input type="hidden" name="activityinfo_form_id" id="ai-form-id-field" value="{{ data.get('activityinfo_form_id', '') }}">
-        <input type="hidden" name="activityinfo_format" id="ai-format-field" value="{{ data.get('activityinfo_format', 'csv') }}">
-        <input type="hidden" name="activityinfo_form_label" id="ai-form-label-field" value="{{ data.get('activityinfo_form_label', '') }}">
-
-        <!-- Show status if resource already exists and is processing -->
-        {% if data.get('id') and data.get('activityinfo_status') %}
-            {% set status = data.get('activityinfo_status') %}
-            {% set progress = data.get('activityinfo_progress', 0) %}
-            {% set error = data.get('activityinfo_error', '') %}
-            
+    <div data-module="activityinfo-download" class="resource-upload-field form-group">
+    {# if this is an edit existent resource form, show the status #}
+    {% if data.get('id') and data.get('activityinfo_status') %}
+        {% set status = data.get('activityinfo_status') %}
+        {% set progress = data.get('activityinfo_progress', 0) %}
+        {% set error = data.get('activityinfo_error', '') %}
+        <div class="activity_info_status_div">
+            <label class="form-label">{{ _('Activity Info') }}</label>
+            <!-- Show status if resource already exists and is processing -->
             <div id="ai-existing-status" class="control-group" style="margin-bottom: 15px;">
                 {% if status == 'pending' %}
                     <div class="alert alert-warning">
@@ -60,9 +61,8 @@
                         {{ _('Downloading file...') }}
                     </div>
                 {% elif status == 'complete' %}
-                    <div class="alert alert-success">
-                        <i class="fa fa-check"></i>
-                        {{ _('Download complete. File has been uploaded to CKAN.') }}
+                    <div class="alert alert-info">
+                        {{ _('This file was downloaded from Activity Info.') }}
                     </div>
                 {% elif status == 'error' %}
                     <div class="alert alert-danger">
@@ -71,7 +71,26 @@
                     </div>
                 {% endif %}
             </div>
-        {% endif %}
+        </div>
+    {% endif %}
+
+    {{ super() }}
+
+    <!-- Hidden fields to store selection for form submission -->
+    <input type="hidden" name="activityinfo_database_id" id="ai-database-id-field" value="{{ data.get('activityinfo_database_id', '') }}">
+    <input type="hidden" name="activityinfo_form_id" id="ai-form-id-field" value="{{ data.get('activityinfo_form_id', '') }}">
+    <input type="hidden" name="activityinfo_format" id="ai-format-field" value="{{ data.get('activityinfo_format', 'csv') }}">
+    <input type="hidden" name="activityinfo_form_label" id="ai-form-label-field" value="{{ data.get('activityinfo_form_label', '') }}">
+
+    {% if user_with_ai_api_key and not data.get('id') %}
+        {# Use url_type=activityinfo for the radio, but it will be converted to url_type=upload on save #}
+        <input type="radio" id="resource-url-activityinfo" name="url_type" value="activityinfo" {{
+            'checked' if is_activityinfo else '' }} />
+        <div class="select-type">{{ remove_button_activityinfo() }}</div>
+    {% endif %}
+
+    {% if user_with_ai_api_key and not data.get('id') %}
+    <div id="activity_info_new_div" style="display: none;">
 
         <!-- Step 1: Select Database -->
         <div id="ai-step-database" class="control-group">
@@ -109,5 +128,8 @@
         <!-- Error display -->
         <div id="ai-error" class="alert alert-danger" style="display:none;"></div>
     </div>
+
     {% endif %}
+
+</div>
 {% endblock %}
