@@ -1,8 +1,6 @@
-import io
 import logging
 
 from ckan.plugins import toolkit
-from werkzeug.datastructures import FileStorage
 from ckanext.activityinfo.jobs.download import download_activityinfo_resource
 
 
@@ -26,19 +24,10 @@ def resource_create(original_action, context, data_dict):
     user = context.get('user')
     log.info(f"ActivityInfo: Creating resource for form {form_id} as {format_type} for user {user}")
 
-    # Create a placeholder file
-    placeholder_content, filename, mime_type = _create_placeholder_file(form_label, format_type)
-
-    file_storage = FileStorage(
-        stream=io.BytesIO(placeholder_content),
-        filename=filename,
-        content_type=mime_type
-    )
-
     # Modify data_dict to use upload with placeholder
-    data_dict['upload'] = file_storage
-    data_dict['url'] = filename
-    data_dict['url_type'] = 'upload'
+    data_dict['upload'] = ''
+    data_dict['url'] = 'activityinfo.waiting.csv'  # filename
+    data_dict['url_type'] = ''  # The final job will move this to 'upload'
     data_dict['resource_type'] = 'activityinfo'
 
     # Set status fields
@@ -84,17 +73,9 @@ def resource_update(original_action, context, data_dict):
     user = context.get('user')
     log.info(f"ActivityInfo: Updating resource for form {form_id} as {format_type} for user {user}")
 
-    placeholder_content, filename, mime_type = _create_placeholder_file(form_label, format_type)
-
-    file_storage = FileStorage(
-        stream=io.BytesIO(placeholder_content),
-        filename=filename,
-        content_type=mime_type
-    )
-
-    data_dict['upload'] = file_storage
-    data_dict['url'] = filename
-    data_dict['url_type'] = 'upload'
+    data_dict['upload'] = ''
+    data_dict['url'] = 'activityinfo.waiting.csv'  # filename
+    data_dict['url_type'] = ''  # The final job will move this to 'upload'
     data_dict['resource_type'] = 'activityinfo'
 
     data_dict['activityinfo_status'] = 'pending'
@@ -113,19 +94,3 @@ def resource_update(original_action, context, data_dict):
     log.info(f"ActivityInfo: Enqueued re-download job for resource {result['id']}")
 
     return result
-
-
-def _create_placeholder_file(form_label: str, format_type: str) -> tuple[bytes, str, str]:
-    """Create a placeholder file for the ActivityInfo resource.
-
-    Returns:
-        Tuple of (content_bytes, filename, mime_type)
-    """
-    safe_label = "".join(c if c.isalnum() or c in '-_ ' else '_' for c in form_label)
-
-    # Simple CSV placeholder for both formats
-    content = f"status,message\npending,Downloading {form_label} from ActivityInfo...\n".encode('utf-8')
-    filename = f"{safe_label}.{format_type}"
-    mime_type = 'text/csv' if format_type == 'csv' else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
-    return content, filename, mime_type
