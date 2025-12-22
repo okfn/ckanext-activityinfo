@@ -215,6 +215,12 @@ ckan.module('activityinfo-download', function($) {
                         opt.textContent = form.label || form.id;
                         self.formSelect.appendChild(opt);
                     });
+                    data.result.sub_forms.forEach(function(form) {
+                        var opt = document.createElement('option');
+                        opt.value = form.id;
+                        opt.textContent = form.label || form.id;
+                        self.formSelect.appendChild(opt);
+                    });
                     self.formSelect.style.display = 'block';
                     
                     // Restore selection if editing
