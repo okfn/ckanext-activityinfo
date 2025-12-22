@@ -40,3 +40,29 @@ def get_user_token(user_name_or_id):
         return None
 
     return plugin_extras['activity_info'].get('api_key')
+
+
+def get_ckan_resources(form_id):
+    """ Search for internal resources linked to the given ActivityInfo form ID
+    Args:
+        form_id: The ActivityInfo form ID
+    Returns:
+        A list of tuples (resource_name, resource_url)
+
+    """
+    search_dict = {'query': f'activityinfo_form_id:{form_id}'}
+    resources = toolkit.get_action('resource_search')({'ignore_auth': True}, search_dict)
+    ret = []
+    if resources.get('count', 0) > 0:
+        results = resources['results']
+        for res in results:
+            pkg = toolkit.get_action('package_show')(
+                {'ignore_auth': True}, {'id': res['package_id']}
+            )
+            pkg_type = pkg.get('type', 'dataset')
+            resource_url = toolkit.url_for(f'{pkg_type}_resource.read', id=pkg['name'], resource_id=res['id'])
+            ret.append(
+                (res.get('name', 'Unnamed resource'), resource_url)
+            )
+
+    return ret

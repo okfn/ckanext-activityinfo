@@ -5,7 +5,7 @@ from ckan.plugins import toolkit
 from ckan.views.api import _finish_ok
 from ckanext.activityinfo.data.base import ActivityInfoClient
 from ckanext.activityinfo.exceptions import ActivityInfoConnectionError
-from ckanext.activityinfo.utils import get_activity_info_user_plugin_extras, get_user_token
+from ckanext.activityinfo.utils import get_activity_info_user_plugin_extras, get_ckan_resources, get_user_token
 
 
 log = logging.getLogger(__name__)
@@ -76,14 +76,16 @@ def forms(database_id):
 
     log.info(f"Retrieved {data}")
 
-    # Add urls to each form
+    # Add urls and related CKAN resources to each form
     aic = ActivityInfoClient()
     for form in data['forms']:
         form['url'] = aic.get_url_to_form(form['id'])
+        form['resources'] = get_ckan_resources(form['id'])
 
     # Add urls to each sub_form
     for sub_form in data.get('sub_forms', []):
         sub_form['url'] = aic.get_url_to_form(sub_form['id'])
+        sub_form['resources'] = get_ckan_resources(sub_form['id'])
 
     extra_vars = {
         'forms': data['forms'],
