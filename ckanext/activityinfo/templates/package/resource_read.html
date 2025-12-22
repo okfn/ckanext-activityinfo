@@ -5,7 +5,7 @@
 
     {{ super () }}
 
-    {% if res.resource_type == 'activityinfo' %}
+    {% if h.is_activityinfo_resource(res) %}
     <p class="bg-primary text-white p-2">{{ _('This resources was downloaded from ActivityInfo.') }}</p>
     {% endif %}
 

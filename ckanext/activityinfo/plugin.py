@@ -31,7 +31,6 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
             'act_info_get_job_status': activity_info_actions.act_info_get_job_status,
             'act_start_download_job': activity_info_actions.act_start_download_job,
             'resource_create': activityinfo_res_actions.resource_create,
-            'resource_update': activityinfo_res_actions.resource_update,
         }
 
     # IAuthFunctions
@@ -50,6 +49,7 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
     def get_helpers(self):
         return {
             'get_activity_info_api_key': helpers.get_activity_info_api_key,
+            'is_activityinfo_resource': helpers.is_activityinfo_resource,
         }
 
     # IBlueprint

@@ -11,6 +11,7 @@ log = logging.getLogger(__name__)
 def resource_create(original_action, context, data_dict):
     """Chain resource_create to handle ActivityInfo imports."""
 
+    # url_type = activityinfo means we are creating an ActivityInfo resource
     if data_dict.get('url_type') != 'activityinfo':
         return original_action(context, data_dict)
 
@@ -26,9 +27,13 @@ def resource_create(original_action, context, data_dict):
 
     # Modify data_dict to use upload with placeholder
     data_dict['upload'] = ''
-    data_dict['url'] = 'activityinfo.waiting.csv'  # filename
+    data_dict['url'] = 'activityinfo.waiting.csv'  # fake filename
     data_dict['url_type'] = ''  # The final job will move this to 'upload'
-    data_dict['resource_type'] = 'activityinfo'
+
+    # Set ActivityInfo-specific fields
+    data_dict['activityinfo_form_id'] = form_id
+    data_dict['activityinfo_form_label'] = form_label
+    data_dict['activityinfo_format'] = format_type
 
     # Set status fields
     data_dict['activityinfo_status'] = 'pending'
@@ -52,45 +57,5 @@ def resource_create(original_action, context, data_dict):
     )
 
     log.info(f"ActivityInfo: Enqueued download job for resource {result['id']}")
-
-    return result
-
-
-@toolkit.chained_action
-def resource_update(original_action, context, data_dict):
-    """Chain resource_update to handle ActivityInfo re-imports."""
-
-    if data_dict.get('url_type') != 'activityinfo':
-        return original_action(context, data_dict)
-
-    form_id = data_dict.get('activityinfo_form_id')
-    format_type = data_dict.get('activityinfo_format', 'csv').lower()
-    form_label = data_dict.get('activityinfo_form_label', 'ActivityInfo Export')
-
-    if not form_id:
-        return original_action(context, data_dict)
-
-    user = context.get('user')
-    log.info(f"ActivityInfo: Updating resource for form {form_id} as {format_type} for user {user}")
-
-    data_dict['upload'] = ''
-    data_dict['url'] = 'activityinfo.waiting.csv'  # filename
-    data_dict['url_type'] = ''  # The final job will move this to 'upload'
-    data_dict['resource_type'] = 'activityinfo'
-
-    data_dict['activityinfo_status'] = 'pending'
-    data_dict['activityinfo_progress'] = 0
-    data_dict['activityinfo_error'] = ''
-
-    result = original_action(context, data_dict)
-
-    toolkit.enqueue_job(
-        download_activityinfo_resource,
-        [result['id'], user],
-        title=f"Re-download ActivityInfo form: {form_label}",
-        rq_kwargs={'timeout': 600}
-    )
-
-    log.info(f"ActivityInfo: Enqueued re-download job for resource {result['id']}")
 
     return result

@@ -4,7 +4,7 @@
 
     {{ super () }}
 
-    {% if res.resource_type == 'activityinfo' %}
+    {% if h.is_activityinfo_resource(res) %}
         <span class="fa-activity-info-ico" title="Resource downloaded from ActivityInfo"> </span>
         {% if res.activityinfo_status != 'complete' %}
             <span class="text-warning">{{ _('Download not finished') }}. Status: {{ res.activityinfo_status }}</span>

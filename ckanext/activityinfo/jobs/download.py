@@ -40,6 +40,7 @@ def download_activityinfo_resource(resource_id: str, user: str) -> None:
 
     token = get_user_token(user)
     if not token:
+        _update_resource_status(toolkit.fresh_context(context), resource_id, 'error', 0, 'No API key configured')
         raise ValueError("No ActivityInfo API key configured for user")
 
     client = ActivityInfoClient(api_key=token)
@@ -49,6 +50,7 @@ def download_activityinfo_resource(resource_id: str, user: str) -> None:
     job_id = job_info.get('id') or job_info.get('jobId')
 
     if not job_id:
+        _update_resource_status(toolkit.fresh_context(context), resource_id, 'error', 0, 'Failed to start export job')
         raise ValueError("Failed to start ActivityInfo export job")
 
     log.debug(f"ActivityInfo Job: Export job started with ID {job_id}")

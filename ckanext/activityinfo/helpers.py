@@ -21,7 +21,7 @@ def get_activityinfo_status(resource):
     Returns:
         dict with 'status', 'progress', and 'error' keys, or None if not an ActivityInfo resource
     """
-    if resource.get('resource_type') != 'activityinfo' and not resource.get('activityinfo_form_id'):
+    if not is_activityinfo_resource(resource):
         return None
 
     return {
@@ -35,7 +35,7 @@ def get_activityinfo_status(resource):
 
 def is_activityinfo_processing(resource):
     """Check if an ActivityInfo resource is still processing."""
-    if resource.get('resource_type') != 'activityinfo':
+    if not is_activityinfo_resource(resource):
         return False
     status = resource.get('activityinfo_status')
     return status in ('pending', 'exporting', 'downloading')
@@ -43,4 +43,4 @@ def is_activityinfo_processing(resource):
 
 def is_activityinfo_resource(resource):
     """Check if a resource is an ActivityInfo resource."""
-    return resource.get('resource_type') == 'activityinfo'
+    return bool(resource.get('activityinfo_form_id'))

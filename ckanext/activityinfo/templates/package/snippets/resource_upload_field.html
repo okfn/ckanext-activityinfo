@@ -1,7 +1,7 @@
 {% ckan_extends %}
 
 {% set user_with_ai_api_key = h.get_activity_info_api_key() %}
-{% set is_activityinfo = data.get('resource_type') == 'activityinfo' %}
+{% set is_activityinfo = h.is_activityinfo_resource(data) %}
 
 {% macro remove_button_activityinfo(js='') %}
   <button type="button" class="btn btn-danger btn-remove-url"
@@ -72,15 +72,24 @@
                 {% endif %}
             </div>
         </div>
+        {# we only allow to clean and change upload for non-activityinfo resources #}
+        {# here we just send the upload field as is #}
+        <input type="hidden" name="url_type" value="{{ data.url_type }}" />
+        <input type="hidden" name="url" value="{{ data.url }}" />
+    {% else %}
+        {# we only allow to clean and change upload for non-activityinfo resources #}
+        {{ super() }}
     {% endif %}
-
-    {{ super() }}
 
     <!-- Hidden fields to store selection for form submission -->
     <input type="hidden" name="activityinfo_database_id" id="ai-database-id-field" value="{{ data.get('activityinfo_database_id', '') }}">
     <input type="hidden" name="activityinfo_form_id" id="ai-form-id-field" value="{{ data.get('activityinfo_form_id', '') }}">
     <input type="hidden" name="activityinfo_format" id="ai-format-field" value="{{ data.get('activityinfo_format', 'csv') }}">
     <input type="hidden" name="activityinfo_form_label" id="ai-form-label-field" value="{{ data.get('activityinfo_form_label', '') }}">
+    <input type="hidden" name="activityinfo_status" id="ai-status-field" value="{{ data.get('activityinfo_status', '') }}">
+    <input type="hidden" name="activityinfo_progress" id="ai-progress-field" value="{{ data.get('activityinfo_progress', 0) }}">
+    <input type="hidden" name="activityinfo_error" id="ai-error-field" value="{{ data.get('activityinfo_error', '') }}">
+
 
     {% if user_with_ai_api_key and not data.get('id') %}
         {# Use url_type=activityinfo for the radio, but it will be converted to url_type=upload on save #}
