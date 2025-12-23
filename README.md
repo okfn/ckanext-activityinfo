@@ -33,9 +33,26 @@ pip install git+https://github.com/okfn/ckanext-activityinfo@0.1.0#egg=ckanext-a
 
 Also, add `activityinfo` to the `ckan.plugins` setting in your CKAN config file.  
 
+## Resource extra fields
+
+This extension adds the following resource extra fields to CKAN resources:
+ - `activityinfo_form_id`: the ActivityInfo form ID
+ - `activityinfo_database_id`: the ActivityInfo database ID
+ - `activityinfo_status`: the download status (e.g. 'pending', 'in_progress', 'complete', 'error')
+ - `activityinfo_progress`: the download progress (0-100)
+ - `activityinfo_error`: any error message if the download failed
+ - `activityinfo_format`: the format of the downloaded data (e.g. 'csv', 'xls')
+ - `activityinfo_form_label`: the label of the ActivityInfo form
+
+You'll need to add them to `ckan.extra_resource_fields` to allow searching resources (action `resource_search`) by these fields.  
+
+```bash
+ckan.extra_resource_fields = activityinfo_form_id activityinfo_database_id activityinfo_form_label
+```
+
 ## Config settings
 
-None at present
+None at present.
 
 ## Get you ActivityInfo data
 

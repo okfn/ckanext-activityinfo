@@ -1,0 +1,12 @@
+{% ckan_extends %}
+
+
+{% block resource_read_url %}
+
+    {{ super () }}
+
+    {% if h.is_activityinfo_resource(res) %}
+    <p class="bg-primary text-white p-2">{{ _('This resources was downloaded from ActivityInfo.') }}</p>
+    {% endif %}
+
+{% endblock %}
