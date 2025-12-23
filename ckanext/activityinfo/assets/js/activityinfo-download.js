@@ -68,13 +68,10 @@ ckan.module('activityinfo-download', function($) {
         },
 
         getCSRFToken: function() {
-            var metaTag = document.querySelector('meta[name="csrf_token"]');
-            if (metaTag) return metaTag.getAttribute('content');
-            var match = document.cookie.match(/csrf_token=([^;]+)/);
-            if (match) return match[1];
-            var input = document.querySelector('input[name="_csrf_token"]');
-            if (input) return input.value;
-            return null;
+            var csrf_field = $('meta[name=csrf_field_name]').attr('content');
+            if (!csrf_field) return null;
+            var csrf_token = $('meta[name='+ csrf_field +']').attr('content');  
+            return csrf_token;
         },
 
         setupHeaders: function() {
