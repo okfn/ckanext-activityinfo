@@ -46,7 +46,22 @@ def resource_create(original_action, context, data_dict):
     data_dict['format'] = format_type.upper()
 
     # Create the resource with placeholder
-    result = original_action(context, data_dict)
+    # If we get a validation error, we need to change the fields we changed so the user
+    # can redefine the "upload" file
+    try:
+        result = original_action(context, data_dict)
+    except toolkit.ValidationError as ve:
+        # Clean modified fields so the form shows correctly
+        data_dict['upload'] = None
+        data_dict['url'] = ''
+        data_dict['url_type'] = ''
+        data_dict['activityinfo_form_id'] = None
+        data_dict['activityinfo_form_label'] = None
+        data_dict['activityinfo_format'] = None
+        data_dict['activityinfo_status'] = None
+        data_dict['activityinfo_progress'] = None
+        data_dict['activityinfo_error'] = None
+        raise ve
 
     # Enqueue the download job
     toolkit.enqueue_job(
