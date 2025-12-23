@@ -77,7 +77,7 @@ ckan.module('activityinfo-download', function($) {
             return null;
         },
 
-        getHeaders: function() {
+        setupHeaders: function() {
             var headers = { 'Content-Type': 'application/json' };
             if (this.csrfToken) headers['X-CSRFToken'] = this.csrfToken;
             return headers;
@@ -137,7 +137,7 @@ ckan.module('activityinfo-download', function($) {
 
             fetch('/api/action/act_info_get_databases', {
                 method: 'POST',
-                headers: this.getHeaders(),
+                headers: this.setupHeaders(),
                 body: JSON.stringify({})
             })
                 .then(function(r) { return r.json(); })
@@ -198,7 +198,7 @@ ckan.module('activityinfo-download', function($) {
 
             fetch('/api/action/act_info_get_forms', {
                 method: 'POST',
-                headers: this.getHeaders(),
+                headers: this.setupHeaders(),
                 body: JSON.stringify({ database_id: dbId })
             })
                 .then(function(r) { return r.json(); })
