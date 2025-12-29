@@ -1,6 +1,6 @@
 [project]
 name = "ckanext-activityinfo"
-version = "0.1.2"
+version = "0.2.0"
 description = "A CKAN extension to connect with the ActivityInfo.org service"
 readme = "README.md"
 authors = [
@@ -8,22 +8,29 @@ authors = [
 ]
 license = {text = "AGPL"}
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 
 keywords = [ "CKAN", "extension,", "ActivityInfo", ]
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/okfn/ckanext-activityinfo"
+"Homepage" = "https://github.com/okfn/ckanext-activityinfo"
+"Issues" = "https://github.com/okfn/ckanext-activityinfo/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["contrib", "docs", "tests*"]
+namespaces = true
 
 [project.entry-points."ckan.plugins"]
 activityinfo = "ckanext.activityinfo.plugin:ActivityinfoPlugin"
-
 
 [build-system]
 requires = ["setuptools"]

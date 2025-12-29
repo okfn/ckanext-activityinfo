@@ -4,3 +4,4 @@ include requirements.txt
 recursive-include ckanext/activityinfo *.html *.json *.js *.less *.css *.mo *.yml
 recursive-include ckanext/activityinfo/migration *.ini *.py *.mako
 recursive-include ckanext/activityinfo/public *.*
+recursive-include ckanext/activityinfo/templates *
