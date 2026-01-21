@@ -123,9 +123,16 @@ def _update_resource_with_file(context: dict, resource_id: str,
                                file_data: bytes, filename: str, format_type: str) -> None:
     """Update resource with the downloaded file."""
     suffix = f'.{format_type}'
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(file_data)
-        tmp_path = tmp.name
+    # Potential error in custom cases
+    tmp_folder = toolkit.config.get('ckanext.activityinfo.tmp_dir', 'sys_tmp')
+    if tmp_folder == 'sys_tmp':
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    else:
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, dir=tmp_folder)
+
+    tmp.write(file_data)
+    tmp_path = tmp.name
+    tmp.close()
 
     if format_type == 'xlsx':
         mime_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
