@@ -104,16 +104,17 @@ class TestTmpDirConfig:
         assert call_args['activityinfo_status'] == 'complete'
 
     @pytest.mark.ckan_config('ckanext.activityinfo.tmp_dir', '')
-    def test_empty_string_tmp_dir_uses_custom_behavior(
+    def test_empty_string_tmp_dir_falls_back_to_default(
         self, setup_data, mock_file_data, mock_dependencies
     ):
-        """Test that empty string for tmp_dir is treated as custom directory."""
+        """Test that empty string for tmp_dir falls back to system temp."""
         context = {'user': setup_data.user['name'], 'ignore_auth': True}
 
         _update_resource_with_file(
             context, setup_data.resource['id'], mock_file_data, 'test_file.csv', 'csv'
         )
 
+        # Empty string config value falls back to default (system temp)
         mock_dependencies['tempfile'].assert_called_once_with(
-            delete=False, suffix='.csv', dir=''
+            delete=False, suffix='.csv'
         )
