@@ -52,13 +52,7 @@ ckan.extra_resource_fields = activityinfo_form_id activityinfo_database_id activ
 
 ## Config settings
 
-These are the configuration settings that can be set in your `ckan.ini` file:
-
-```
-# Define where to save temporary files downloaded from ActivityInfo.
-# If not set or "sys_tmp", the system temporary directory will be used.
-ckanext.activityinfo.tmp_dir = /path/to/tmp/dir
-```
+None at present.
 
 ## Get you ActivityInfo data
 
