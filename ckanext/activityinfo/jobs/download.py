@@ -125,7 +125,7 @@ def _update_resource_with_file(context: dict, resource_id: str,
     suffix = f'.{format_type}'
     # Potential error in custom cases
     tmp_folder = toolkit.config.get('ckanext.activityinfo.tmp_dir', 'sys_tmp')
-    if tmp_folder == 'sys_tmp':
+    if not tmp_folder or tmp_folder == 'sys_tmp':
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     else:
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, dir=tmp_folder)
