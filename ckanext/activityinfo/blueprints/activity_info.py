@@ -148,7 +148,7 @@ def update_api_key():
         }
     )
     toolkit.h.flash_success('ActivityInfo API key updated successfully.')
-    return toolkit.redirect_to('activity_info.api_key')
+    return toolkit.redirect_to('activity_info.databases')
 
 
 @activityinfo_bp.route('/remove-api-key', methods=['POST'])
