@@ -26,7 +26,7 @@
 
                     {% if form.resources %}
                         {% for resource_name, resource_url in form.resources %}
-                            <a href="{{ resource_url }}">{{ resource_name }}</a>
+                            <a class="badge bg-primary text-decoration-none" href="{{ resource_url }}">{{ resource_name }}</a>
                         {% endfor %}
                     {% endif %}
                 </td>
@@ -42,7 +42,7 @@
                                 data-form-label="{{ form.label }}"
                                 data-download-url-template="{% url_for 'activity_info.download_form_data', form_id=form.id, format='__FORMAT__' %}"
                                 data-job-status-url="{% url_for 'activity_info.job_status', job_id='__JOB_ID__' %}">
-                            <span class="download-text">Download</span>
+                            <span class="download-text">Download from ActivityInfo</span>
                             <span class="download-spinner" style="display: none;">
                                 <i class="fa fa-spinner fa-spin"></i> <span class="progress-text">Starting...</span>
                             </span>
@@ -82,7 +82,7 @@
 
                     {% if form.resources %}
                         {% for resource_name, resource_url in form.resources %}
-                            <a href="{{ resource_url }}">{{ resource_name }}</a>
+                            <a class="badge bg-primary text-decoration-none" href="{{ resource_url }}">{{ resource_name }}</a>
                         {% endfor %}
                     {% endif %}
                 </td>
@@ -98,7 +98,7 @@
                                 data-form-label="{{ form.label }}"
                                 data-download-url-template="{% url_for 'activity_info.download_form_data', form_id=form.id, format='__FORMAT__' %}"
                                 data-job-status-url="{% url_for 'activity_info.job_status', job_id='__JOB_ID__' %}">
-                            <span class="download-text">Download</span>
+                            <span class="download-text">Download from ActivityInfo</span>
                             <span class="download-spinner" style="display: none;">
                                 <i class="fa fa-spinner fa-spin"></i> <span class="progress-text">Starting...</span>
                             </span>

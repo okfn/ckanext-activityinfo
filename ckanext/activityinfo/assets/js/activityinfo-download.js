@@ -7,7 +7,7 @@ ckan.module('activityinfo-download', function($) {
             this.container_div = this.el.querySelector('#activity_info_new_div');
             this.dbSelect = this.el.querySelector('#ai-database-select');
             this.formSelect = this.el.querySelector('#ai-form-select');
-            this.formatSelect = this.el.querySelector('#ai-format-select');
+            this.formatCheckboxes = this.el.querySelectorAll('.ai-format-checkbox');
             this.errorDiv = this.el.querySelector('#ai-error');
             this.infoDiv = this.el.querySelector('#ai-info');
             this.radioBtn = document.getElementById('resource-url-activityinfo');
@@ -17,7 +17,7 @@ ckan.module('activityinfo-download', function($) {
             // Hidden fields for form submission
             this.dbIdField = this.el.querySelector('#ai-database-id-field');
             this.formIdField = this.el.querySelector('#ai-form-id-field');
-            this.formatField = this.el.querySelector('#ai-format-field');
+            this.formatsField = this.el.querySelector('#ai-formats-field');
             this.formLabelField = this.el.querySelector('#ai-form-label-field');
             
             this.databasesLoaded = false;
@@ -62,8 +62,10 @@ ckan.module('activityinfo-download', function($) {
                 self.onFormChange();
             });
 
-            this.formatSelect.addEventListener('change', function() {
-                self.onFormatChange();
+            this.formatCheckboxes.forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    self.onFormatChange();
+                });
             });
         },
 
@@ -93,7 +95,15 @@ ckan.module('activityinfo-download', function($) {
         updateHiddenFields: function() {
             this.dbIdField.value = this.dbSelect.value || '';
             this.formIdField.value = this.formSelect.value || '';
-            this.formatField.value = this.formatSelect.value || 'csv';
+            
+            // Get selected formats from checkboxes
+            var selectedFormats = [];
+            this.formatCheckboxes.forEach(function(checkbox) {
+                if (checkbox.checked) {
+                    selectedFormats.push(checkbox.value);
+                }
+            });
+            this.formatsField.value = selectedFormats.join(',') || 'csv';
             
             var selectedForm = this.formSelect.options[this.formSelect.selectedIndex];
             this.formLabelField.value = selectedForm && selectedForm.value ? selectedForm.textContent.trim() : '';
@@ -104,10 +114,10 @@ ckan.module('activityinfo-download', function($) {
                 nameField.value = this.formLabelField.value;
             }
             
-            // Update format field
+            // Update format field with first selected format
             var formatField = document.getElementById('field-format');
-            if (formatField && this.formatSelect.value) {
-                formatField.value = this.formatSelect.value.toUpperCase();
+            if (formatField && selectedFormats.length > 0) {
+                formatField.value = selectedFormats[0].toUpperCase();
             }
 
             // Update description field with ActivityInfo info
@@ -240,8 +250,11 @@ ckan.module('activityinfo-download', function($) {
                 this.infoDiv.style.display = 'block';
                 
                 // Restore format selection if editing
-                if (this.formatField.value) {
-                    this.formatSelect.value = this.formatField.value;
+                if (this.formatsField.value) {
+                    var formats = this.formatsField.value.split(',');
+                    this.formatCheckboxes.forEach(function(checkbox) {
+                        checkbox.checked = formats.indexOf(checkbox.value) !== -1;
+                    });
                 }
             } else {
                 this.el.querySelector('#ai-step-format').style.display = 'none';
