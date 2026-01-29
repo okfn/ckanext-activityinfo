@@ -1,4 +1,5 @@
 import logging
+from functools import wraps
 from ckan.plugins import toolkit
 
 
@@ -66,3 +67,48 @@ def get_ckan_resources(form_id):
             )
 
     return ret
+
+
+def get_ai_resources(limit=100):
+    """ Search for all resources linked to any ActivityInfo form ID
+    Args:
+        limit: Maximum number of resources to return, default 100
+    Returns:
+        A list of resources with their URLs
+
+    """
+    search_dict = {
+        'query': 'activityinfo_status:complete',
+        'limit': limit,
+    }
+    resources = toolkit.get_action('resource_search')({'ignore_auth': True}, search_dict)
+    ret = []
+    if resources.get('count', 0) > 0:
+        results = resources['results']
+        for res in results:
+            pkg = toolkit.get_action('package_show')(
+                {'ignore_auth': True}, {'id': res['package_id']}
+            )
+            pkg_type = pkg.get('type', 'dataset')
+            resource_url = toolkit.url_for(f'{pkg_type}_resource.read', id=pkg['name'], resource_id=res['id'])
+            res['final_url'] = resource_url
+            res['package'] = pkg
+            ret.append(res)
+
+    return ret
+
+
+def require_sysadmin_user(func):
+    '''
+    Decorator for flask view functions. Returns 403 response if no user is logged in or if the login user is external
+    '''
+
+    @wraps(func)
+    def view_wrapper(*args, **kwargs):
+        if not toolkit.current_user or toolkit.current_user.is_anonymous:
+            return toolkit.abort(403, "Forbidden")
+        if not toolkit.current_user.sysadmin:
+            return toolkit.abort(403, "Sysadmin user required")
+        return func(*args, **kwargs)
+
+    return view_wrapper

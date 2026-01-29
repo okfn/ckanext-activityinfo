@@ -47,7 +47,7 @@ This extension adds the following resource extra fields to CKAN resources:
 You'll need to add them to `ckan.extra_resource_fields` to allow searching resources (action `resource_search`) by these fields.  
 
 ```bash
-ckan.extra_resource_fields = activityinfo_form_id activityinfo_database_id activityinfo_form_label
+ckan.extra_resource_fields = activityinfo_form_id activityinfo_database_id activityinfo_form_label activityinfo_status
 ```
 
 ## Config settings
