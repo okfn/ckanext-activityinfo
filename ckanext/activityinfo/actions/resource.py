@@ -9,68 +9,97 @@ log = logging.getLogger(__name__)
 
 @toolkit.chained_action
 def resource_create(original_action, context, data_dict):
-    """Chain resource_create to handle ActivityInfo imports."""
+    """ Chain resource_create to handle ActivityInfo imports.
+        We must create one or more resources depending on the selected formats.
+        Users can check more than one format, so we create a resource per format.
+    """
 
     # url_type = activityinfo means we are creating an ActivityInfo resource
     if data_dict.get('url_type') != 'activityinfo':
         return original_action(context, data_dict)
 
     form_id = data_dict.get('activityinfo_form_id')
-    format_type = data_dict.get('activityinfo_format', 'csv').lower()
+    # Support multiple formats (comma-separated) or single format
+    formats_str = data_dict.get('activityinfo_formats', '') or data_dict.get('activityinfo_format', 'csv')
+    formats = [f.strip().lower() for f in formats_str.split(',') if f.strip()]
+
+    # Ensure at least one format is selected
+    if not formats:
+        formats = ['csv']
+
     form_label = data_dict.get('activityinfo_form_label', 'ActivityInfo Export')
 
     if not form_id:
         return original_action(context, data_dict)
 
     user = context.get('user')
-    log.info(f"ActivityInfo: Creating resource for form {form_id} as {format_type} for user {user}")
+    log.info(f"ActivityInfo: Creating resource(s) for form {form_id} as {formats} for user {user}")
 
-    # Modify data_dict to use upload with placeholder
-    data_dict['upload'] = ''
-    data_dict['url'] = 'activityinfo.waiting.csv'  # fake filename
-    data_dict['url_type'] = ''  # The final job will move this to 'upload'
+    # Create a resource for each format
+    results = []
+    first_result = None
 
-    # Set ActivityInfo-specific fields
-    data_dict['activityinfo_form_id'] = form_id
-    data_dict['activityinfo_form_label'] = form_label
-    data_dict['activityinfo_format'] = format_type
+    for i, format_type in enumerate(formats):
+        # Create a copy of data_dict for each resource
+        resource_data = data_dict.copy()
 
-    # Set status fields
-    data_dict['activityinfo_status'] = 'pending'
-    data_dict['activityinfo_progress'] = 0
-    data_dict['activityinfo_error'] = ''
+        # Modify data_dict to use upload with placeholder
+        resource_data['upload'] = ''
+        resource_data['url'] = f'activityinfo.waiting.{format_type}'  # fake filename
+        resource_data['url_type'] = ''  # The final job will move this to 'upload'
 
-    if not data_dict.get('name'):
-        data_dict['name'] = form_label
+        # Set ActivityInfo-specific fields
+        resource_data['activityinfo_form_id'] = form_id
+        resource_data['activityinfo_form_label'] = form_label
+        resource_data['activityinfo_format'] = format_type
 
-    data_dict['format'] = format_type.upper()
+        # Set status fields
+        resource_data['activityinfo_status'] = 'pending'
+        resource_data['activityinfo_progress'] = 0
+        resource_data['activityinfo_error'] = ''
 
-    # Create the resource with placeholder
-    # If we get a validation error, we need to change the fields we changed so the user
-    # can redefine the "upload" file
-    try:
-        result = original_action(context, data_dict)
-    except toolkit.ValidationError as ve:
-        # Clean modified fields so the form shows correctly
-        data_dict['upload'] = None
-        data_dict['url'] = ''
-        data_dict['url_type'] = ''
-        data_dict['activityinfo_form_id'] = None
-        data_dict['activityinfo_form_label'] = None
-        data_dict['activityinfo_format'] = None
-        data_dict['activityinfo_status'] = None
-        data_dict['activityinfo_progress'] = None
-        data_dict['activityinfo_error'] = None
-        raise ve
+        # Set name with format suffix if multiple formats
+        if len(formats) > 1:
+            resource_data['name'] = f"{form_label} ({format_type.upper()})"
+        elif not resource_data.get('name'):
+            resource_data['name'] = form_label
 
-    # Enqueue the download job
-    toolkit.enqueue_job(
-        download_activityinfo_resource,
-        [result['id'], user],
-        title=f"Download ActivityInfo form: {form_label}",
-        rq_kwargs={'timeout': 600}
-    )
+        resource_data['format'] = format_type.upper()
 
-    log.info(f"ActivityInfo: Enqueued download job for resource {result['id']}")
+        # Create the resource with placeholder
+        try:
+            result = original_action(context, resource_data)
+            results.append(result)
+            if first_result is None:
+                first_result = result
+        except toolkit.ValidationError as ve:
+            # Clean modified fields so the form shows correctly
+            # Only raise on first resource to avoid partial creation issues
+            if i == 0:
+                data_dict['upload'] = None
+                data_dict['url'] = ''
+                data_dict['url_type'] = ''
+                data_dict['activityinfo_form_id'] = None
+                data_dict['activityinfo_form_label'] = None
+                data_dict['activityinfo_format'] = None
+                data_dict['activityinfo_formats'] = None
+                data_dict['activityinfo_status'] = None
+                data_dict['activityinfo_progress'] = None
+                data_dict['activityinfo_error'] = None
+                raise ve
+            else:
+                log.error(f"ActivityInfo: Failed to create resource for format {format_type}: {ve}")
+                continue
 
-    return result
+        # Enqueue the download job
+        toolkit.enqueue_job(
+            download_activityinfo_resource,
+            [result['id'], user],
+            title=f"Download ActivityInfo form: {form_label} ({format_type.upper()})",
+            rq_kwargs={'timeout': 600}
+        )
+
+        log.info(f"ActivityInfo: Enqueued download job for resource {result['id']} ({format_type})")
+
+    # Return the first result (standard CKAN behavior expects single resource)
+    return first_result
