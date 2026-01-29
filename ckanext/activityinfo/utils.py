@@ -1,6 +1,8 @@
 import logging
 from functools import wraps
 from ckan.plugins import toolkit
+from ckan import model
+from sqlalchemy import and_
 
 
 log = logging.getLogger(__name__)
@@ -96,6 +98,36 @@ def get_ai_resources(limit=100):
             ret.append(res)
 
     return ret
+
+
+def get_users_with_activity_info_token():
+    """
+    Get all users that have an ActivityInfo API key set in their plugin_extras.
+    Uses SQLAlchemy to query the JSONB plugin_extras column.
+
+    Returns:
+        A list of user objects with ActivityInfo API keys.
+    """
+    # Query users where plugin_extras -> 'activity_info' -> 'api_key' exists and is not null
+    # Use chained -> operators: plugin_extras -> 'activity_info' ->> 'api_key'
+    users = model.Session.query(model.User).filter(
+        and_(
+            model.User.state == 'active',
+            model.User.plugin_extras.isnot(None),
+            model.User.plugin_extras['activity_info'].isnot(None),
+            model.User.plugin_extras['activity_info']['api_key'].astext.isnot(None),
+            model.User.plugin_extras['activity_info']['api_key'].astext != '',
+        )
+    ).all()
+
+    final_users = []
+    for user in users:
+        final_users.append({
+            'id': user.id,
+            'name': user.name,
+        })
+
+    return final_users
 
 
 def require_sysadmin_user(func):

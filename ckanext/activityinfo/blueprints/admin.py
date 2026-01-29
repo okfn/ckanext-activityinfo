@@ -1,7 +1,11 @@
 import logging
 from flask import Blueprint
 from ckan.plugins import toolkit
-from ckanext.activityinfo.utils import require_sysadmin_user, get_ai_resources
+from ckanext.activityinfo.utils import (
+    require_sysadmin_user,
+    get_ai_resources,
+    get_users_with_activity_info_token,
+)
 
 
 log = logging.getLogger(__name__)
@@ -17,7 +21,7 @@ def index():
     """
     log.info('ActivityInfo admin index view')
 
-    ai_users = []
+    ai_users = get_users_with_activity_info_token()
     ai_resources = get_ai_resources()
 
     ctx = {
