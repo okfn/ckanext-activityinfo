@@ -1,0 +1,64 @@
+{% extends "activity_info/base.html" %}
+
+{%- block subtitle %}Activity Info admin page{% endblock -%}
+
+{% block primary_content %}
+<div class="internal-div-section">
+    <h1>Activity Info admin page</h1>
+
+    <h2>Users with Activity Info tokens</h2>
+    <table id="activity-info-admin-users-list-table"
+        class="table table-header table-hover table-bordered table-responsive">
+        <thead>
+            <tr>
+                <th>User</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in ai_users %}
+            <tr>
+                <td>
+                    <a href="{{ h.url_for('user.read', id=user.name) }}">
+                        {{ user.name }}
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Activity Info linked resources</h2>
+    <table id="activity-info-admin-resources"
+        class="table table-header table-hover table-bordered table-responsive">
+        <thead>
+            <tr>
+                <th>Resource</th>
+                <th>Dataset ID</th>
+                <th>Activity Info Database</th>
+                <th>Activity Info Form</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for resource in ai_resources %}
+            <tr>
+                <td>
+                    <a href="{{ resource.final_url }}">
+                        {{ resource.name }}
+                    </a>
+                </td>
+                <td>
+                    <a href="{{ h.url_for('dataset.read', id=resource.package.name) }}">
+                        {{ resource.package.title }}
+                </td>
+                <td>{{ resource.activityinfo_database_id }}</td>
+                <td>{{ resource.activityinfo_form_label }}</td>
+                <td>
+                    {{ h.render_datetime(resource.created) }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

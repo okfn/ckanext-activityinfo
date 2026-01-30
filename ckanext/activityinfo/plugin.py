@@ -4,7 +4,10 @@ from ckanext.activityinfo import helpers
 from ckanext.activityinfo.actions import activity_info as activity_info_actions
 from ckanext.activityinfo.actions import resource as activityinfo_res_actions
 from ckanext.activityinfo.auth import activity_info as activity_info_auth
-from ckanext.activityinfo.blueprints import activity_info as activity_info_bp
+from ckanext.activityinfo.blueprints import (
+    activity_info as activity_info_bp,
+    admin as activity_info_admin_bp
+)
 
 
 class ActivityinfoPlugin(plugins.SingletonPlugin):
@@ -56,5 +59,6 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
 
     def get_blueprint(self):
         return [
-            activity_info_bp.activityinfo_bp
+            activity_info_bp.activityinfo_bp,
+            activity_info_admin_bp.activityinfo_admin_blueprint,
         ]
