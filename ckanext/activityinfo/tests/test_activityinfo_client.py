@@ -383,6 +383,7 @@ def test_download_file_follows_redirect_without_auth(monkeypatch, client):
         status_code = 307
         headers = {'Location': 'https://storage.googleapis.com/signed-url'}
         content = b''
+        text = ''
 
         def raise_for_status(self):
             pass
@@ -390,6 +391,7 @@ def test_download_file_follows_redirect_without_auth(monkeypatch, client):
     class FinalResponse:
         status_code = 200
         content = b'file-content-here'
+        text = 'file-content-here'
 
         def raise_for_status(self):
             pass
@@ -419,6 +421,7 @@ def test_download_file_no_redirect(monkeypatch, client):
     class DirectResponse:
         status_code = 200
         content = b'direct-content'
+        text = 'direct-content'
 
         def raise_for_status(self):
             pass
@@ -438,6 +441,7 @@ def test_download_file_empty_raises(monkeypatch, client):
     class EmptyResponse:
         status_code = 200
         content = b''
+        text = ''
 
         def raise_for_status(self):
             pass
