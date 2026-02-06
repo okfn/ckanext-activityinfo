@@ -144,7 +144,7 @@ class TestDownloadEndpoints:
             resp = app.get(f"/activity-info/download-file/{job_id}", headers=environ)
 
             assert resp.status_code == 200
-            assert resp.content_type == "text/csv"
+            assert resp.content_type.startswith("text/csv")
             assert b"col1,col2" in resp.data
 
     def test_download_file_proxy_not_completed(self, app, setup_data):

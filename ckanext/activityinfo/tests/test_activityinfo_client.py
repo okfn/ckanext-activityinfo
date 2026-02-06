@@ -375,7 +375,7 @@ def test_get_job_file_completed(requests_mock_fixture, client):
     assert result == "https://www.activityinfo.org/resources/jobs/job123/download"
 
 
-def test_download_file_follows_redirect_without_auth(monkeypatch, client):
+def test_download_file_follows_redirect_without_auth(monkeypatch):
     """Test that download_file follows 307 redirects without sending auth headers."""
     calls = []
 
@@ -404,7 +404,8 @@ def test_download_file_follows_redirect_without_auth(monkeypatch, client):
 
     monkeypatch.setattr(requests, "get", fake_get)
 
-    result = client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")
+    test_client = ActivityInfoClient(api_key="test-api-key", debug=False)
+    result = test_client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")
 
     assert result == b'file-content-here'
     # First call should have auth headers and allow_redirects=False
@@ -415,7 +416,7 @@ def test_download_file_follows_redirect_without_auth(monkeypatch, client):
     assert calls[1]['url'] == 'https://storage.googleapis.com/signed-url'
 
 
-def test_download_file_no_redirect(monkeypatch, client):
+def test_download_file_no_redirect(monkeypatch):
     """Test that download_file works when there is no redirect."""
 
     class DirectResponse:
@@ -431,11 +432,12 @@ def test_download_file_no_redirect(monkeypatch, client):
 
     monkeypatch.setattr(requests, "get", fake_get)
 
-    result = client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")
+    test_client = ActivityInfoClient(api_key="test-api-key", debug=False)
+    result = test_client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")
     assert result == b'direct-content'
 
 
-def test_download_file_empty_raises(monkeypatch, client):
+def test_download_file_empty_raises(monkeypatch):
     """Test that download_file raises when downloaded content is empty."""
 
     class EmptyResponse:
@@ -451,5 +453,6 @@ def test_download_file_empty_raises(monkeypatch, client):
 
     monkeypatch.setattr(requests, "get", fake_get)
 
+    test_client = ActivityInfoClient(api_key="test-api-key", debug=False)
     with pytest.raises(ValueError, match="empty"):
-        client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")
+        test_client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")
