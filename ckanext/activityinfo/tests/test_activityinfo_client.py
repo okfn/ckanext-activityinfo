@@ -398,16 +398,21 @@ class MockResponse:
 def test_download_file_follows_redirect_without_auth(monkeypatch):
     """Test that download_file follows 307 redirects without sending auth headers."""
     calls = []
+    original_get = requests.get
 
     def fake_get(url, headers=None, allow_redirects=None, **kwargs):
-        calls.append({'url': url, 'headers': headers, 'allow_redirects': allow_redirects})
-        if 'activityinfo.org' in url:
-            return MockResponse(
-                307,
-                b'',
-                {'Location': 'https://storage.googleapis.com/signed-url'}
-            )
-        return MockResponse(200, b'file-content-here')
+        # Only mock specific test URLs
+        if 'activityinfo.org' in url or 'storage.googleapis.com' in url:
+            calls.append({'url': url, 'headers': headers, 'allow_redirects': allow_redirects})
+            if 'activityinfo.org' in url:
+                return MockResponse(
+                    307,
+                    b'',
+                    {'Location': 'https://storage.googleapis.com/signed-url'}
+                )
+            return MockResponse(200, b'file-content-here')
+        # Pass through all other requests (e.g., Solr checks)
+        return original_get(url, headers=headers, allow_redirects=allow_redirects, **kwargs)
 
     monkeypatch.setattr(requests, "get", fake_get)
 
@@ -425,9 +430,14 @@ def test_download_file_follows_redirect_without_auth(monkeypatch):
 
 def test_download_file_no_redirect(monkeypatch):
     """Test that download_file works when there is no redirect."""
+    original_get = requests.get
 
     def fake_get(url, headers=None, allow_redirects=None, **kwargs):
-        return MockResponse(200, b'direct-content')
+        # Only mock specific test URLs
+        if 'activityinfo.org' in url:
+            return MockResponse(200, b'direct-content')
+        # Pass through all other requests (e.g., Solr checks)
+        return original_get(url, headers=headers, allow_redirects=allow_redirects, **kwargs)
 
     monkeypatch.setattr(requests, "get", fake_get)
 
@@ -438,9 +448,14 @@ def test_download_file_no_redirect(monkeypatch):
 
 def test_download_file_empty_raises(monkeypatch):
     """Test that download_file raises when downloaded content is empty."""
+    original_get = requests.get
 
     def fake_get(url, headers=None, allow_redirects=None, **kwargs):
-        return MockResponse(200, b'')
+        # Only mock specific test URLs
+        if 'activityinfo.org' in url:
+            return MockResponse(200, b'')
+        # Pass through all other requests (e.g., Solr checks)
+        return original_get(url, headers=headers, allow_redirects=allow_redirects, **kwargs)
 
     monkeypatch.setattr(requests, "get", fake_get)
 
