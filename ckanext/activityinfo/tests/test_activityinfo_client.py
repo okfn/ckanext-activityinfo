@@ -375,32 +375,39 @@ def test_get_job_file_completed(requests_mock_fixture, client):
     assert result == "https://www.activityinfo.org/resources/jobs/job123/download"
 
 
+class MockResponse:
+    """Mock HTTP response for testing download_file methods."""
+    def __init__(self, status_code=200, content=b'', headers=None):
+        self.status_code = status_code
+        self.content = content
+        self.text = content.decode('utf-8') if isinstance(content, bytes) else str(content)
+        self.headers = headers or {}
+        self.encoding = 'utf-8'
+        self.url = ''
+        self.reason = 'OK' if status_code == 200 else 'Temporary Redirect'
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"{self.status_code} Error", response=self)
+
+    def json(self):
+        import json
+        return json.loads(self.text) if self.text else {}
+
+
 def test_download_file_follows_redirect_without_auth(monkeypatch):
     """Test that download_file follows 307 redirects without sending auth headers."""
     calls = []
 
-    class RedirectResponse:
-        status_code = 307
-        headers = {'Location': 'https://storage.googleapis.com/signed-url'}
-        content = b''
-        text = ''
-
-        def raise_for_status(self):
-            pass
-
-    class FinalResponse:
-        status_code = 200
-        content = b'file-content-here'
-        text = 'file-content-here'
-
-        def raise_for_status(self):
-            pass
-
     def fake_get(url, headers=None, allow_redirects=None, **kwargs):
         calls.append({'url': url, 'headers': headers, 'allow_redirects': allow_redirects})
         if 'activityinfo.org' in url:
-            return RedirectResponse()
-        return FinalResponse()
+            return MockResponse(
+                307,
+                b'',
+                {'Location': 'https://storage.googleapis.com/signed-url'}
+            )
+        return MockResponse(200, b'file-content-here')
 
     monkeypatch.setattr(requests, "get", fake_get)
 
@@ -419,16 +426,8 @@ def test_download_file_follows_redirect_without_auth(monkeypatch):
 def test_download_file_no_redirect(monkeypatch):
     """Test that download_file works when there is no redirect."""
 
-    class DirectResponse:
-        status_code = 200
-        content = b'direct-content'
-        text = 'direct-content'
-
-        def raise_for_status(self):
-            pass
-
     def fake_get(url, headers=None, allow_redirects=None, **kwargs):
-        return DirectResponse()
+        return MockResponse(200, b'direct-content')
 
     monkeypatch.setattr(requests, "get", fake_get)
 
@@ -440,16 +439,8 @@ def test_download_file_no_redirect(monkeypatch):
 def test_download_file_empty_raises(monkeypatch):
     """Test that download_file raises when downloaded content is empty."""
 
-    class EmptyResponse:
-        status_code = 200
-        content = b''
-        text = ''
-
-        def raise_for_status(self):
-            pass
-
     def fake_get(url, headers=None, allow_redirects=None, **kwargs):
-        return EmptyResponse()
+        return MockResponse(200, b'')
 
     monkeypatch.setattr(requests, "get", fake_get)
 
