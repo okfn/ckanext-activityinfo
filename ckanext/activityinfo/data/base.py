@@ -224,6 +224,35 @@ class ActivityInfoClient:
         url = f"{self.base_url}/{endpoint}"
         return True, url
 
+    def _follow_redirect_without_auth(self, url):
+        """Make an authenticated request and follow any redirect without auth headers.
+
+        ActivityInfo returns 307 redirects to Google Cloud Storage signed URLs.
+        GCS does not expect an Authorization header alongside its signed URL,
+        so we must strip the auth header when following the redirect.
+
+        Args:
+            url (str): The URL to request.
+        Returns:
+            The response object from the final request.
+        """
+        headers = self.get_user_auth_headers()
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        log.debug(f"Initial response status: {response.status_code} for {url}")
+
+        if response.status_code in (301, 302, 303, 307, 308):
+            redirect_url = response.headers.get('Location')
+            log.info(f"Following redirect to {redirect_url} without auth headers")
+            response = requests.get(redirect_url)
+
+        response.raise_for_status()
+        log.debug(f"Downloaded {len(response.content)} bytes from {url}")
+
+        if not response.content:
+            raise ValueError(f"Downloaded file is empty from {url}")
+
+        return response
+
     def download_finished_export(self, download_url):
         """
         Download the finished export file from ActivityInfo.
@@ -232,9 +261,7 @@ class ActivityInfoClient:
         Returns:
             The content of the downloaded file.
         """
-        headers = self.get_user_auth_headers()
-        response = requests.get(download_url, headers=headers)
-        response.raise_for_status()
+        response = self._follow_redirect_without_auth(download_url)
         return response.content
 
     def download_file(self, url: str) -> bytes:
@@ -246,7 +273,5 @@ class ActivityInfoClient:
         Returns:
             The file contents as bytes
         """
-        headers = {'Authorization': f'Bearer {self.api_key}'}
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
+        response = self._follow_redirect_without_auth(url)
         return response.content

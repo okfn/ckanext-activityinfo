@@ -95,7 +95,7 @@ class TestDownloadEndpoints:
             data = resp.json
             assert data["success"] is True
             assert data["result"]["state"] == "completed"
-            assert data["download_url"] == "https://www.activityinfo.org/resources/jobs/job_abc123/download"
+            assert data["download_url"] == "/activity-info/download-file/job_abc123"
 
     def test_job_status_failed(self, app, setup_data):
         """Test job status endpoint when job has failed"""
@@ -119,6 +119,83 @@ class TestDownloadEndpoints:
             assert data["success"] is True
             assert data["result"]["state"] == "failed"
             assert data["download_url"] is None
+
+    def test_download_file_proxy_completed(self, app, setup_data):
+        """Test proxy download endpoint returns file when job is completed"""
+        environ = {"Authorization": setup_data.activityinfo_user["token"]}
+        job_id = "job_abc123"
+
+        fake_status = {
+            "id": job_id,
+            "state": "completed",
+            "percentComplete": 100,
+            "result": {
+                "downloadUrl": "/resources/jobs/job_abc123/download"
+            }
+        }
+
+        with mock.patch(
+            "ckanext.activityinfo.data.base.ActivityInfoClient.get_job_status",
+            return_value=fake_status,
+        ), mock.patch(
+            "ckanext.activityinfo.data.base.ActivityInfoClient.download_file",
+            return_value=b"col1,col2\nval1,val2\n",
+        ):
+            resp = app.get(f"/activity-info/download-file/{job_id}", headers=environ)
+
+            assert resp.status_code == 200
+            assert resp.content_type == "text/csv"
+            assert b"col1,col2" in resp.data
+
+    def test_download_file_proxy_not_completed(self, app, setup_data):
+        """Test proxy download endpoint returns 400 when job is not completed"""
+        environ = {"Authorization": setup_data.activityinfo_user["token"]}
+        job_id = "job_abc123"
+
+        fake_status = {
+            "id": job_id,
+            "state": "started",
+            "percentComplete": 50
+        }
+
+        with mock.patch(
+            "ckanext.activityinfo.data.base.ActivityInfoClient.get_job_status",
+            return_value=fake_status,
+        ):
+            resp = app.get(
+                f"/activity-info/download-file/{job_id}",
+                headers=environ,
+                expect_errors=True
+            )
+            assert resp.status_code == 400
+
+    def test_download_file_proxy_download_error(self, app, setup_data):
+        """Test proxy download endpoint returns 502 when download fails"""
+        environ = {"Authorization": setup_data.activityinfo_user["token"]}
+        job_id = "job_abc123"
+
+        fake_status = {
+            "id": job_id,
+            "state": "completed",
+            "percentComplete": 100,
+            "result": {
+                "downloadUrl": "/resources/jobs/job_abc123/download"
+            }
+        }
+
+        with mock.patch(
+            "ckanext.activityinfo.data.base.ActivityInfoClient.get_job_status",
+            return_value=fake_status,
+        ), mock.patch(
+            "ckanext.activityinfo.data.base.ActivityInfoClient.download_file",
+            side_effect=Exception("GCS 404 Not Found"),
+        ):
+            resp = app.get(
+                f"/activity-info/download-file/{job_id}",
+                headers=environ,
+                expect_errors=True
+            )
+            assert resp.status_code == 502
 
 
 @pytest.mark.usefixtures("clean_db")

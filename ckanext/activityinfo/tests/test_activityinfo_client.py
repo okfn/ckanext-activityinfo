@@ -373,3 +373,79 @@ def test_get_job_file_completed(requests_mock_fixture, client):
 
     assert done is True
     assert result == "https://www.activityinfo.org/resources/jobs/job123/download"
+
+
+def test_download_file_follows_redirect_without_auth(monkeypatch, client):
+    """Test that download_file follows 307 redirects without sending auth headers."""
+    calls = []
+
+    class RedirectResponse:
+        status_code = 307
+        headers = {'Location': 'https://storage.googleapis.com/signed-url'}
+        content = b''
+
+        def raise_for_status(self):
+            pass
+
+    class FinalResponse:
+        status_code = 200
+        content = b'file-content-here'
+
+        def raise_for_status(self):
+            pass
+
+    def fake_get(url, headers=None, allow_redirects=None, **kwargs):
+        calls.append({'url': url, 'headers': headers, 'allow_redirects': allow_redirects})
+        if 'activityinfo.org' in url:
+            return RedirectResponse()
+        return FinalResponse()
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    result = client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")
+
+    assert result == b'file-content-here'
+    # First call should have auth headers and allow_redirects=False
+    assert calls[0]['headers']['Authorization'] == 'Bearer test-api-key'
+    assert calls[0]['allow_redirects'] is False
+    # Second call (to GCS) should NOT have auth headers
+    assert calls[1]['headers'] is None
+    assert calls[1]['url'] == 'https://storage.googleapis.com/signed-url'
+
+
+def test_download_file_no_redirect(monkeypatch, client):
+    """Test that download_file works when there is no redirect."""
+
+    class DirectResponse:
+        status_code = 200
+        content = b'direct-content'
+
+        def raise_for_status(self):
+            pass
+
+    def fake_get(url, headers=None, allow_redirects=None, **kwargs):
+        return DirectResponse()
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    result = client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")
+    assert result == b'direct-content'
+
+
+def test_download_file_empty_raises(monkeypatch, client):
+    """Test that download_file raises when downloaded content is empty."""
+
+    class EmptyResponse:
+        status_code = 200
+        content = b''
+
+        def raise_for_status(self):
+            pass
+
+    def fake_get(url, headers=None, allow_redirects=None, **kwargs):
+        return EmptyResponse()
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    with pytest.raises(ValueError, match="empty"):
+        client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")
