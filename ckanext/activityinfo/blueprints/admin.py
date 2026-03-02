@@ -1,6 +1,7 @@
 import logging
 from flask import Blueprint
 from ckan.plugins import toolkit
+from ckanext.activityinfo.helpers import get_activityinfo_enable_flag
 from ckanext.activityinfo.utils import (
     require_sysadmin_user,
     get_ai_resources,
@@ -20,6 +21,10 @@ def index():
         and also all resources linked to ActivityInfo databases
     """
     log.info('ActivityInfo admin index view')
+    if not get_activityinfo_enable_flag():
+        log.warning('ActivityInfo admin page accessed but ActivityInfo is disabled via feature flag')
+        toolkit.h.flash_warning('ActivityInfo is currently disabled. Enable it in the configuration to use this page.')
+        return toolkit.redirect_to('admin.index')
 
     ai_users = get_users_with_activity_info_token()
     ai_resources = get_ai_resources()
