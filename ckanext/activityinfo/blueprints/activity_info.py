@@ -21,7 +21,7 @@ def index():
     """
     if not get_activityinfo_enable_flag():
         log.warning('ActivityInfo page accessed but ActivityInfo is disabled via feature flag')
-        toolkit.h.flash_warning('ActivityInfo is currently disabled. Enable it in the configuration to use this page.')
+        toolkit.h.flash_notice('ActivityInfo is currently disabled. Enable it in the configuration to use this page.')
         return toolkit.redirect_to('home')
 
     extra_vars = {

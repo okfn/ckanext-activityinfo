@@ -23,7 +23,7 @@ def index():
     log.info('ActivityInfo admin index view')
     if not get_activityinfo_enable_flag():
         log.warning('ActivityInfo admin page accessed but ActivityInfo is disabled via feature flag')
-        toolkit.h.flash_warning('ActivityInfo is currently disabled. Enable it in the configuration to use this page.')
+        toolkit.h.flash_notice('ActivityInfo is currently disabled. Enable it in the configuration to use this page.')
         return toolkit.redirect_to('admin.index')
 
     ai_users = get_users_with_activity_info_token()

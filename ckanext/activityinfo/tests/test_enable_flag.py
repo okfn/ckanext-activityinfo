@@ -48,7 +48,7 @@ class TestActivityInfoBlueprintDisabled:
         assert resp.status_code == 302
 
     @pytest.mark.ckan_config('ckanext.activityinfo.activityinfo_enabled', 'false')
-    def test_user_index_shows_flash_warning_when_disabled(self, app, setup_data):
+    def test_user_index_shows_flash_notice_when_disabled(self, app, setup_data):
         """User blueprint shows a warning flash message when flag is disabled."""
         url = toolkit.url_for('activity_info.index')
         environ = {"Authorization": setup_data.regular_user["token"]}
@@ -64,7 +64,7 @@ class TestActivityInfoBlueprintDisabled:
         assert resp.status_code == 302
 
     @pytest.mark.ckan_config('ckanext.activityinfo.activityinfo_enabled', 'false')
-    def test_admin_index_shows_flash_warning_when_disabled(self, app, setup_data):
+    def test_admin_index_shows_flash_notice_when_disabled(self, app, setup_data):
         """Admin blueprint shows a warning flash message when flag is disabled."""
         url = toolkit.url_for('activity_info_admin.index')
         environ = {"Authorization": setup_data.sysadmin["token"]}
