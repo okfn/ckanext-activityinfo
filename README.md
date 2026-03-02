@@ -60,7 +60,7 @@ These are the configuration settings that can be set in your `ckan.ini` file:
 ckanext.activityinfo.tmp_dir = /path/to/tmp/dir
 ```
 
-### This extension a feature flag
+### This extension as a feature flag
 
 If you need to implement this extension in a way that it can be enabled/disabled with a feature flag, you can
 define the following setting in your `ckan.ini` file:
