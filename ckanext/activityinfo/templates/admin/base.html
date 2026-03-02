@@ -2,7 +2,7 @@
 
 {% block content_primary_nav %}
   {{ super() }}
-  {% if h.get_activityinfo_enable_flag() %}  {# Allow hidding this menu if feature flag is disabled #}
+  {% if h.get_activityinfo_enable_flag() %}  {# Allow hiding this menu if feature flag is disabled #}
   {{ h.build_nav_icon('activity_info_admin.index', 'Activity Info',icon='activity-info-ico') }}
   {% endif %}
 {% endblock %}
