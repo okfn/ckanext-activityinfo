@@ -1,6 +1,7 @@
 {% ckan_extends %}
 
-{% set user_with_ai_api_key = h.get_activity_info_api_key() %}
+{% set activity_info_enabled = h.get_activityinfo_enable_flag() %}  {# Allow hiding this menu if feature flag is disabled #}
+{% set user_with_ai_api_key = activity_info_enabled and h.get_activity_info_api_key() %}
 {% set is_activityinfo = h.is_activityinfo_resource(data) %}
 
 {% macro remove_button_activityinfo(js='') %}

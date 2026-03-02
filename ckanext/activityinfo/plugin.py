@@ -52,6 +52,7 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
     def get_helpers(self):
         return {
             'get_activity_info_api_key': helpers.get_activity_info_api_key,
+            'get_activityinfo_enable_flag': helpers.get_activityinfo_enable_flag,
             'is_activityinfo_resource': helpers.is_activityinfo_resource,
         }
 

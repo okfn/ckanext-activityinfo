@@ -5,6 +5,7 @@ from ckan.plugins import toolkit
 from ckan.views.api import _finish_ok
 from ckanext.activityinfo.data.base import ActivityInfoClient
 from ckanext.activityinfo.exceptions import ActivityInfoConnectionError
+from ckanext.activityinfo.helpers import get_activityinfo_enable_flag
 from ckanext.activityinfo.utils import get_activity_info_user_plugin_extras, get_ckan_resources, get_user_token
 
 
@@ -18,6 +19,11 @@ def index():
         If the user has an API key, redirect to databases
         If not, show a page to enter the API key
     """
+    if not get_activityinfo_enable_flag():
+        log.warning('ActivityInfo page accessed but ActivityInfo is disabled via feature flag')
+        toolkit.h.flash_notice('ActivityInfo is currently disabled. Enable it in the configuration to use this page.')
+        return toolkit.redirect_to('home')
+
     extra_vars = {
         'api_key': get_user_token(current_user.name),
     }

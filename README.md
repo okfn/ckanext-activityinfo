@@ -60,6 +60,20 @@ These are the configuration settings that can be set in your `ckan.ini` file:
 ckanext.activityinfo.tmp_dir = /path/to/tmp/dir
 ```
 
+### This extension as a feature flag
+
+If you need to implement this extension in a way that it can be enabled/disabled with a feature flag, you can
+define the following setting in your `ckan.ini` file:
+
+```
+# activityinfo_enabled defaults to true, so the extension is enabled by default. You can set it to false to temporarily disable the extension.
+ckanext.activityinfo.activityinfo_enabled = false
+```
+
+Disabling the extension will only hide the option to create new ActivityInfo resources in the CKAN UI, but it won't affect existing ActivityInfo resources.  
+Also, the UI access for users to add or edit their ActivityInfo API key in their user   profile will be hidden, but the API key will still be valid and can be used to download data from ActivityInfo for existing resources.  
+Hiding elements from the UI is just a soft way to disable this extension. This is not a hard disable.  
+
 ## Get you ActivityInfo data
 
 ### ActivityInfo API Key
