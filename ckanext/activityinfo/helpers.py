@@ -1,5 +1,6 @@
 import logging
 from ckan.common import current_user
+from ckan.plugins import toolkit
 from ckanext.activityinfo.utils import get_user_token
 
 
@@ -44,3 +45,8 @@ def is_activityinfo_processing(resource):
 def is_activityinfo_resource(resource):
     """Check if a resource is an ActivityInfo resource."""
     return bool(resource.get('activityinfo_form_id'))
+
+
+def get_activityinfo_enable_flag():
+    """Check if the ActivityInfo extension is enabled via the feature flag."""
+    return toolkit.asbool(toolkit.config.get('ckanext.activityinfo.activityinfo_enabled', 'true'))
