@@ -66,7 +66,7 @@ If you need to implement this extension in a way that it can be enabled/disabled
 define the following setting in your `ckan.ini` file:
 
 ```
-# activityinfo_enabled defaults to true, so the extension is enabled by default. You can set it to false to temporary disable the extension.
+# activityinfo_enabled defaults to true, so the extension is enabled by default. You can set it to false to temporarily disable the extension.
 ckanext.activityinfo.activityinfo_enabled = false
 ```
 
