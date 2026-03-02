@@ -72,7 +72,7 @@ ckanext.activityinfo.activityinfo_enabled = false
 
 Disabling the extension will only hide the option to create new ActivityInfo resources in the CKAN UI, but it won't affect existing ActivityInfo resources.  
 Also, the UI access for users to add or edit their ActivityInfo API key in their user   profile will be hidden, but the API key will still be valid and can be used to download data from ActivityInfo for existing resources.  
-Hidding elements from the UI is just a soft way to disable this extension. This is not a hard disable.  
+Hiding elements from the UI is just a soft way to disable this extension. This is not a hard disable.  
 
 ## Get you ActivityInfo data
 
