@@ -1,5 +1,5 @@
 import logging
-from flask import Blueprint
+from flask import Blueprint, Response
 from ckan.common import current_user
 from ckan.plugins import toolkit
 from ckan.views.api import _finish_ok
@@ -220,18 +220,73 @@ def job_status(job_id):
 
     log.info(f"Job status for {job_id}: {job_status}")
 
-    # Build full download URL if job is completed
-    full_download_url = None
+    # Build proxy download URL if job is completed
+    proxy_download_url = None
     if job_status.get('state') == 'completed':
         result = job_status.get('result', {})
         relative_url = result.get('downloadUrl', '')
         if relative_url:
-            aic = ActivityInfoClient()
-            full_download_url = f"{aic.base_url}/{relative_url.lstrip('/')}"
+            proxy_download_url = toolkit.url_for('activity_info.download_file', job_id=job_id)
 
     ret = {
         'success': True,
         'result': job_status,
-        'download_url': full_download_url,
+        'download_url': proxy_download_url,
     }
     return _finish_ok(ret)
+
+
+@activityinfo_bp.route('/download-file/<job_id>')
+def download_file(job_id):
+    """Proxy download endpoint that fetches the file server-side.
+
+    This avoids the 307 redirect issue where ActivityInfo redirects to
+    a GCS signed URL and the browser forwards the Authorization header,
+    causing GCS to reject the request.
+    """
+    token = get_user_token(current_user.name)
+    if not token:
+        return toolkit.abort(403, "No ActivityInfo API key configured")
+
+    client = ActivityInfoClient(api_key=token)
+
+    try:
+        job_data = client.get_job_status(job_id)
+    except Exception as e:
+        log.error(f"Failed to get job status for {job_id}: {e}")
+        return toolkit.abort(500, f"Failed to get export job status: {e}")
+
+    if job_data.get('state') != 'completed':
+        state = job_data.get('state', 'unknown')
+        return toolkit.abort(400, f"Export job is not completed (state: {state})")
+
+    result = job_data.get('result', {})
+    download_url = result.get('downloadUrl', '')
+    if not download_url:
+        return toolkit.abort(500, "Export completed but no download URL provided")
+
+    if not download_url.startswith('http'):
+        download_url = f"{client.base_url}/{download_url.lstrip('/')}"
+
+    try:
+        file_content = client.download_file(download_url)
+    except Exception as e:
+        log.error(f"Failed to download file for job {job_id}: {e}")
+        return toolkit.abort(502, f"Failed to download file from ActivityInfo: {e}")
+
+    # Determine content type and filename from the URL
+    if download_url.endswith('.xlsx'):
+        content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        filename = f"export-{job_id}.xlsx"
+    elif download_url.endswith('.txt'):
+        content_type = 'text/plain'
+        filename = f"export-{job_id}.txt"
+    else:
+        content_type = 'text/csv'
+        filename = f"export-{job_id}.csv"
+
+    return Response(
+        file_content,
+        mimetype=content_type,
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )

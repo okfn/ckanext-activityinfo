@@ -373,3 +373,92 @@ def test_get_job_file_completed(requests_mock_fixture, client):
 
     assert done is True
     assert result == "https://www.activityinfo.org/resources/jobs/job123/download"
+
+
+class MockResponse:
+    """Mock HTTP response for testing download_file methods."""
+    def __init__(self, status_code=200, content=b'', headers=None):
+        self.status_code = status_code
+        self.content = content
+        self.text = content.decode('utf-8') if isinstance(content, bytes) else str(content)
+        self.headers = headers or {}
+        self.encoding = 'utf-8'
+        self.url = ''
+        self.reason = 'OK' if status_code == 200 else 'Temporary Redirect'
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"{self.status_code} Error", response=self)
+
+    def json(self):
+        import json
+        return json.loads(self.text) if self.text else {}
+
+
+def test_download_file_follows_redirect_without_auth(monkeypatch):
+    """Test that download_file follows 307 redirects without sending auth headers."""
+    calls = []
+    original_get = requests.get
+
+    def fake_get(url, headers=None, allow_redirects=None, **kwargs):
+        # Only mock specific test URLs
+        if 'activityinfo.org' in url or 'storage.googleapis.com' in url:
+            calls.append({'url': url, 'headers': headers, 'allow_redirects': allow_redirects})
+            if 'activityinfo.org' in url:
+                return MockResponse(
+                    307,
+                    b'',
+                    {'Location': 'https://storage.googleapis.com/signed-url'}
+                )
+            return MockResponse(200, b'file-content-here')
+        # Pass through all other requests (e.g., Solr checks)
+        return original_get(url, headers=headers, allow_redirects=allow_redirects, **kwargs)
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    test_client = ActivityInfoClient(api_key="test-api-key", debug=False)
+    result = test_client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")
+
+    assert result == b'file-content-here'
+    # First call should have auth headers and allow_redirects=False
+    assert calls[0]['headers']['Authorization'] == 'Bearer test-api-key'
+    assert calls[0]['allow_redirects'] is False
+    # Second call (to GCS) should NOT have auth headers
+    assert calls[1]['headers'] is None
+    assert calls[1]['url'] == 'https://storage.googleapis.com/signed-url'
+
+
+def test_download_file_no_redirect(monkeypatch):
+    """Test that download_file works when there is no redirect."""
+    original_get = requests.get
+
+    def fake_get(url, headers=None, allow_redirects=None, **kwargs):
+        # Only mock specific test URLs
+        if 'activityinfo.org' in url:
+            return MockResponse(200, b'direct-content')
+        # Pass through all other requests (e.g., Solr checks)
+        return original_get(url, headers=headers, allow_redirects=allow_redirects, **kwargs)
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    test_client = ActivityInfoClient(api_key="test-api-key", debug=False)
+    result = test_client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")
+    assert result == b'direct-content'
+
+
+def test_download_file_empty_raises(monkeypatch):
+    """Test that download_file raises when downloaded content is empty."""
+    original_get = requests.get
+
+    def fake_get(url, headers=None, allow_redirects=None, **kwargs):
+        # Only mock specific test URLs
+        if 'activityinfo.org' in url:
+            return MockResponse(200, b'')
+        # Pass through all other requests (e.g., Solr checks)
+        return original_get(url, headers=headers, allow_redirects=allow_redirects, **kwargs)
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    test_client = ActivityInfoClient(api_key="test-api-key", debug=False)
+    with pytest.raises(ValueError, match="empty"):
+        test_client.download_file("https://www.activityinfo.org/resources/jobs/job123/download")

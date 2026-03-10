@@ -74,7 +74,7 @@
                     // Use the full download URL from the response
                     const downloadUrl = data.download_url;
                     if (downloadUrl) {
-                        // Open in new tab to trigger download from ActivityInfo
+                        // Open in new tab to trigger download via proxy endpoint
                         window.open(downloadUrl, '_blank');
                         showAlert('Download ready for "' + formLabel + '"', 'success');
                     } else {

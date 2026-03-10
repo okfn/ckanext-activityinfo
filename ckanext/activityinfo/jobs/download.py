@@ -27,6 +27,27 @@ def download_activityinfo_resource(resource_id: str, user: str) -> None:
 
     context = {'user': user}
 
+    try:
+        _do_download(context, resource_id, user)
+    except Exception:
+        log.exception(f"ActivityInfo Job: Unhandled error for resource {resource_id}")
+        try:
+            _update_resource_status(
+                {'user': user}, resource_id, 'error', 0,
+                'An unexpected error occurred during the ActivityInfo download'
+            )
+        except Exception:
+            log.exception(
+                f"ActivityInfo Job: Failed to update error status for resource {resource_id}"
+            )
+        raise
+
+
+def _do_download(context: dict, resource_id: str, user: str) -> None:
+    """Inner logic for downloading ActivityInfo data.
+
+    Separated from the top-level function to keep cyclomatic complexity manageable.
+    """
     resource = toolkit.get_action('resource_show')(context, {'id': resource_id})
 
     form_id = resource.get('activityinfo_form_id')
@@ -40,31 +61,71 @@ def download_activityinfo_resource(resource_id: str, user: str) -> None:
 
     token = get_user_token(user)
     if not token:
-        _update_resource_status(toolkit.fresh_context(context), resource_id, 'error', 0, 'No API key configured')
+        _update_resource_status(
+            toolkit.fresh_context(context), resource_id, 'error', 0, 'No API key configured'
+        )
         raise ValueError("No ActivityInfo API key configured for user")
 
     client = ActivityInfoClient(api_key=token)
 
-    log.info(f"ActivityInfo Job: Starting export for form {form_id}")
-    job_info = client.start_job_download_form_data(form_id, format=format_type.upper())
-    job_id = job_info.get('id') or job_info.get('jobId')
+    job_id = _start_export_job(client, context, resource_id, form_id, format_type)
+    download_url = _poll_for_completion(client, context, resource_id, job_id)
 
+    file_data = _download_export_file(client, context, resource_id, download_url)
+
+    # Generate filename
+    safe_label = "".join(c if c.isalnum() or c in '-_ ' else '_' for c in form_label)
+    filename = f"{safe_label}.{format_type}"
+
+    # Save to temp file and update resource
+    _update_resource_with_file(
+        toolkit.fresh_context(context), resource_id, file_data, filename, format_type
+    )
+
+    log.info(f"ActivityInfo Job: Successfully updated resource {resource_id}")
+
+
+def _start_export_job(client, context, resource_id, form_id, format_type):
+    """Start an ActivityInfo export job and return the job ID."""
+    log.info(f"ActivityInfo Job: Starting export for form {form_id}")
+    try:
+        job_info = client.start_job_download_form_data(form_id, format=format_type.upper())
+    except Exception as e:
+        error_msg = f"Failed to start ActivityInfo export: {e}"
+        log.error(error_msg)
+        _update_resource_status(toolkit.fresh_context(context), resource_id, 'error', 0, error_msg)
+        raise
+
+    job_id = job_info.get('id') or job_info.get('jobId')
     if not job_id:
-        _update_resource_status(toolkit.fresh_context(context), resource_id, 'error', 0, 'Failed to start export job')
+        _update_resource_status(
+            toolkit.fresh_context(context), resource_id, 'error', 0, 'Failed to start export job'
+        )
         raise ValueError("Failed to start ActivityInfo export job")
 
     log.debug(f"ActivityInfo Job: Export job started with ID {job_id}")
+    return job_id
 
-    # Poll for job completion
+
+def _poll_for_completion(client, context, resource_id, job_id):
+    """Poll ActivityInfo for job completion and return the download URL."""
     max_wait = 300  # 5 minutes max
     poll_interval = 3
     elapsed = 0
 
     while elapsed < max_wait:
-        status = client.get_job_status(job_id)
+        try:
+            status = client.get_job_status(job_id)
+        except Exception as e:
+            error_msg = f"Failed to get export job status: {e}"
+            log.error(error_msg)
+            _update_resource_status(
+                toolkit.fresh_context(context), resource_id, 'error', 0, error_msg
+            )
+            raise
+
         state = status.get('state')
         percent = status.get('percentComplete', 0)
-        # Update progress
         _update_resource_status(toolkit.fresh_context(context), resource_id, 'exporting', percent)
 
         if state == 'completed':
@@ -72,36 +133,52 @@ def download_activityinfo_resource(resource_id: str, user: str) -> None:
             download_url = result.get('downloadUrl') if isinstance(result, dict) else None
             if not download_url:
                 raise ValueError("Export completed but no download URL provided")
-
             log.info(f"ActivityInfo Job: Export completed, downloading from {download_url}")
-            _update_resource_status(toolkit.fresh_context(context), resource_id, 'downloading', 100)
-
-            # Download the file
+            _update_resource_status(
+                toolkit.fresh_context(context), resource_id, 'downloading', 100
+            )
             if not download_url.startswith('http'):
                 download_url = f"{client.base_url}/{download_url.lstrip('/')}"
+            return download_url
 
-            file_data = client.download_file(download_url)
-
-            # Generate filename
-            safe_label = "".join(c if c.isalnum() or c in '-_ ' else '_' for c in form_label)
-            filename = f"{safe_label}.{format_type}"
-
-            # Save to temp file and update resource
-            _update_resource_with_file(toolkit.fresh_context(context), resource_id, file_data, filename, format_type)
-
-            log.info(f"ActivityInfo Job: Successfully updated resource {resource_id}")
-            return
-
-        elif state == 'failed':
+        if state == 'failed':
             error = status.get('error', 'Unknown error')
-            _update_resource_status(toolkit.fresh_context(context), resource_id, 'error', percent, error)
+            _update_resource_status(
+                toolkit.fresh_context(context), resource_id, 'error', percent, error
+            )
             raise ValueError(f"ActivityInfo export job failed: {error}")
 
         time.sleep(poll_interval)
         elapsed += poll_interval
 
-    _update_resource_status(toolkit.fresh_context(context), resource_id, 'error', 0, 'Timeout waiting for export job to complete')
+    _update_resource_status(
+        toolkit.fresh_context(context), resource_id, 'error', 0,
+        'Timeout waiting for export job to complete'
+    )
     raise ValueError(f"ActivityInfo export job timed out after {max_wait} seconds")
+
+
+def _download_export_file(client, context, resource_id, download_url):
+    """Download the exported file and validate it is not empty."""
+    try:
+        file_data = client.download_file(download_url)
+    except Exception as e:
+        error_msg = f"Failed to download file from ActivityInfo: {e}"
+        log.error(error_msg)
+        _update_resource_status(
+            toolkit.fresh_context(context), resource_id, 'error', 100, error_msg
+        )
+        raise
+
+    if not file_data:
+        error_msg = "Downloaded file is empty"
+        log.error(error_msg)
+        _update_resource_status(
+            toolkit.fresh_context(context), resource_id, 'error', 100, error_msg
+        )
+        raise ValueError(error_msg)
+
+    return file_data
 
 
 def _update_resource_status(context: dict, resource_id: str, status: str,
