@@ -104,17 +104,50 @@ class ActivityInfoClient:
         """
         return self.get(f"resources/form/{form_id}/tree/translated")
 
+    def get_reference_field_records(self, form_id, element):
+        """
+        Get records from the form referenced by a reference field.
+        These are the options shown in the reference field dropdown.
+
+        Docs: https://www.activityinfo.org/support/docs/api/reference/getFormRecords.html
+
+        Args:
+            form_id (str): The ID of the current form (used for context/logging).
+            element (dict): The reference field element from the form schema.
+                Must have type 'reference' and a 'range' array with formId entries.
+        Returns:
+            A dict with 'referencedFormId' and 'records' (list of records from the
+            referenced form).
+        """
+        range_list = element.get('range', [])
+        if not range_list:
+            log.warning(f"Reference field {element.get('id')} in form {form_id} has no range")
+            return {'referencedFormId': None, 'records': []}
+
+        referenced_form_id = range_list[0].get('formId')
+        if not referenced_form_id:
+            log.warning(f"Reference field {element.get('id')} in form {form_id} has no formId in range")
+            return {'referencedFormId': None, 'records': []}
+
+        records = self.get(f"resources/form/{referenced_form_id}/query")
+        return {
+            'referencedFormId': referenced_form_id,
+            'records': records
+        }
+
     def get_form_columns(self, form_id):
         """
         Get the columns for a form to use in export requests.
         Fetches the form schema and builds the columns array from the elements.
+        For reference fields, uses dot notation (e.g. FIELD_ID.NAME) to export
+        the human-readable label instead of the raw record ID.
 
         Args:
             form_id (str): The ID of the form.
         Returns:
             A list of column definitions for the export API.
         """
-        form_tree = self.get(f"resources/form/{form_id}/tree/translated")
+        form_tree = self.get_form(database_id=None, form_id=form_id)
         forms_data = form_tree.get('forms', {})
         form_data = forms_data.get(form_id, {})
         schema = form_data.get('schema', {})
@@ -127,10 +160,17 @@ class ActivityInfoClient:
             if element_type in ('SUB_FORM', 'section'):
                 continue
 
+            field_id = element.get('id')
+            # For reference fields, use dot notation to get the readable label
+            if element_type in ('reference', 'multiselectreference'):
+                formula = f"{field_id}.NAME"
+            else:
+                formula = field_id
+
             column = {
-                'id': element.get('id'),
-                'label': element.get('label', element.get('id')),
-                'formula': element.get('id'),
+                'id': field_id,
+                'label': element.get('label', field_id),
+                'formula': formula,
                 'translate': False
             }
             columns.append(column)
