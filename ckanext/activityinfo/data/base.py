@@ -161,19 +161,38 @@ class ActivityInfoClient:
                 continue
 
             field_id = element.get('id')
-            # For reference fields, use dot notation to get the readable label
-            if element_type in ('reference', 'multiselectreference'):
-                formula = f"{field_id}.NAME"
-            else:
-                formula = field_id
+            label = element.get('label', field_id)
 
-            column = {
-                'id': field_id,
-                'label': element.get('label', field_id),
-                'formula': formula,
-                'translate': False
-            }
-            columns.append(column)
+            if element_type == 'multiselectreference':
+                # The API do not allow get names like single references.
+                columns.append({
+                    'id': field_id,
+                    'label': f"{label} [MultiReference ID]",
+                    'formula': field_id,
+                    'translate': False
+                })
+            elif element_type == 'reference':
+                # Raw reference ID column
+                columns.append({
+                    'id': field_id,
+                    'label': f"{label} [Reference ID]",
+                    'formula': field_id,
+                    'translate': False
+                })
+                # Human-readable name column
+                columns.append({
+                    'id': f"{field_id}_name",
+                    'label': label,
+                    'formula': f"{field_id}.NAME",
+                    'translate': False
+                })
+            else:
+                columns.append({
+                    'id': field_id,
+                    'label': label,
+                    'formula': field_id,
+                    'translate': False
+                })
 
         return columns
 
