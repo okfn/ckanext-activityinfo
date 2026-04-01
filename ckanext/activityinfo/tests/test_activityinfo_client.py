@@ -259,6 +259,123 @@ def test_get_form_columns_uses_id_as_label_fallback(requests_mock_fixture, clien
     assert columns[0]["label"] == "field1"
 
 
+def test_get_form_columns_reference_field(requests_mock_fixture, client):
+    """Reference fields should produce two columns: raw ID and human-readable name."""
+    form_id = "f1"
+    url = f"https://www.activityinfo.org/resources/form/{form_id}/tree/translated"
+    fake_response = {
+        "forms": {
+            form_id: {
+                "schema": {
+                    "databaseId": "db1",
+                    "elements": [
+                        {"id": "field1", "label": "Name", "type": "text"},
+                        {
+                            "id": "ref1", "label": "ARG Province", "type": "reference",
+                            "range": [{"formId": "province_form"}]
+                        },
+                    ]
+                }
+            }
+        }
+    }
+    requests_mock_fixture.get(url, json=fake_response)
+    columns = client.get_form_columns(form_id)
+
+    assert len(columns) == 3
+    # Regular field
+    assert columns[0] == {
+        "id": "field1", "label": "Name", "formula": "field1", "translate": False
+    }
+    # Reference ID column
+    assert columns[1] == {
+        "id": "ref1", "label": "ARG Province [Reference ID]",
+        "formula": "ref1", "translate": False
+    }
+    # Reference NAME column
+    assert columns[2] == {
+        "id": "ref1_name", "label": "ARG Province",
+        "formula": "ref1.NAME", "translate": False
+    }
+
+
+def test_get_form_columns_multiselectreference_field(requests_mock_fixture, client):
+    """Multi-select reference fields produce only one column (ID) since the API
+    does not support .NAME resolution for multi-select references."""
+    form_id = "f1"
+    url = f"https://www.activityinfo.org/resources/form/{form_id}/tree/translated"
+    fake_response = {
+        "forms": {
+            form_id: {
+                "schema": {
+                    "databaseId": "db1",
+                    "elements": [
+                        {
+                            "id": "mref1", "label": "Brasil Provinces",
+                            "type": "multiselectreference",
+                            "range": [{"formId": "br_province_form"}]
+                        },
+                    ]
+                }
+            }
+        }
+    }
+    requests_mock_fixture.get(url, json=fake_response)
+    columns = client.get_form_columns(form_id)
+
+    assert len(columns) == 1
+    assert columns[0] == {
+        "id": "mref1", "label": "Brasil Provinces [MultiReference ID]",
+        "formula": "mref1", "translate": False
+    }
+
+
+def test_get_form_columns_mixed_fields(requests_mock_fixture, client):
+    """Test a form with text, reference, and multiselectreference fields together.
+    Mirrors the real CSV structure: reference gets ID + name columns,
+    multiselectreference gets only an ID column."""
+    form_id = "f1"
+    url = f"https://www.activityinfo.org/resources/form/{form_id}/tree/translated"
+    fake_response = {
+        "forms": {
+            form_id: {
+                "schema": {
+                    "databaseId": "db1",
+                    "elements": [
+                        {"id": "name", "label": "Name of tools", "type": "FREE_TEXT"},
+                        {"id": "year", "label": "Year", "type": "quantity"},
+                        {
+                            "id": "mref1", "label": "Multi ref brasil province",
+                            "type": "multiselectreference",
+                            "range": [{"formId": "br_form"}]
+                        },
+                        {"id": "comment", "label": "Comment", "type": "FREE_TEXT"},
+                        {
+                            "id": "ref1", "label": "ARG Province",
+                            "type": "reference",
+                            "range": [{"formId": "arg_form"}]
+                        },
+                    ]
+                }
+            }
+        }
+    }
+    requests_mock_fixture.get(url, json=fake_response)
+    columns = client.get_form_columns(form_id)
+
+    # 3 regular + 1 multiref (ID only) + 1 ref (ID + name) = 6
+    assert len(columns) == 6
+    assert columns[0]["formula"] == "name"
+    assert columns[1]["formula"] == "year"
+    assert columns[2]["formula"] == "mref1"
+    assert columns[2]["label"] == "Multi ref brasil province [MultiReference ID]"
+    assert columns[3]["formula"] == "comment"
+    assert columns[4]["formula"] == "ref1"
+    assert columns[4]["label"] == "ARG Province [Reference ID]"
+    assert columns[5]["formula"] == "ref1.NAME"
+    assert columns[5]["label"] == "ARG Province"
+
+
 def test_start_job_download_form_data(requests_mock_fixture, client):
     form_id = "f1"
     form_url = f"https://www.activityinfo.org/resources/form/{form_id}/tree/translated"
