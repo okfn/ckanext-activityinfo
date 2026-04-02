@@ -50,6 +50,9 @@ You'll need to add them to `ckan.extra_resource_fields` to allow searching resou
 ckan.extra_resource_fields = activityinfo_form_id activityinfo_database_id activityinfo_form_label activityinfo_status
 ```
 
+You will get error is extra fields are not added to `ckan.extra_resource_fields` and you try to search resources by these fields. For example:
+
+
 ## Config settings
 
 These are the configuration settings that can be set in your `ckan.ini` file:
@@ -84,6 +87,13 @@ Then define a label and the access level (Read or Read/Write) and click on "Gene
 
 ![Generate API key](/extras/imgs/activityinfo-token-generation.png)
 
+You'll need to add this API key to your CKAN user profile.  
+
+![CKAN User profile page](/extras/imgs/activity-info-user-page.png)
+
+![Add you API key to CKAN](/extras/imgs/activity-info-define-api-key.png)
+
+
 ## CLI commands
 
 This extension also provides some CLI commands to list your ActivityInfo databases and forms.  
@@ -96,6 +106,19 @@ ckan activityinfo databases list -t <your_api_key> -v
 ckan activityinfo forms list -t <your_api_key> -d <database_id> -v --include-sub-forms
 ```
 
+## Adding a new resources
+
+![Generate API key](/extras/imgs/activityinfo-new-res-01.png)
+
+![Generate API key](/extras/imgs/activityinfo-new-res-02.png)
+
+![Generate API key](/extras/imgs/activityinfo-new-res-03.png)
+
+![Generate API key](/extras/imgs/activityinfo-new-res-04.png)
+
+![Generate API key](/extras/imgs/activityinfo-new-res-05.png)
+
+![Generate API key](/extras/imgs/activityinfo-new-res-06.png)
 
 ## License
 
