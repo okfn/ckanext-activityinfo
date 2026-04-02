@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 pytest_plugins = [
-    u'ckanext.activityinfo.tests.fixtures',
+    'ckanext.activityinfo.tests.fixtures',
 ]

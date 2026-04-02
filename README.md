@@ -84,7 +84,17 @@ Then define a label and the access level (Read or Read/Write) and click on "Gene
 
 ![Generate API key](/extras/imgs/activityinfo-token-generation.png)
 
-### Get your ActivityInfo databases
+## CLI commands
+
+This extension also provides some CLI commands to list your ActivityInfo databases and forms.  
+You can run these commands with the `ckan` CLI tool. For example:  
+
+```bash
+# Get databases list
+ckan activityinfo databases list -t <your_api_key> -v
+# Get forms list for a specific database
+ckan activityinfo forms list -t <your_api_key> -d <database_id> -v --include-sub-forms
+```
 
 
 ## License
