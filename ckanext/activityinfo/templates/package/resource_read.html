@@ -6,7 +6,23 @@
     {{ super () }}
 
     {% if h.is_activityinfo_resource(res) %}
-    <p class="bg-primary text-white p-2">{{ _('This resources was downloaded from ActivityInfo.') }}</p>
+    <p class="bg-secondary text-white p-2">
+        {{ _('This resources was downloaded from ActivityInfo.') }}
+    </p>
+
+    {% if h.get_activity_info_api_key() %}
+        <p class="bg-secondary text-white p-2">
+            <!-- If this is a ActivityInfo user, show the update btn -->
+            {{ _('If your ActivityInfo key have permissions to access the related form, you can update the resource with the latest data from ActivityInfo.') }}
+            <button
+                class="btn btn-primary activityinfo-update-resource-btn"
+                data-activityinfo-resource-id="{{ res.id }}"
+                ><i class="fa fa-refresh"></i> <span class="update-activityinfo-button-text">
+                    {{ _('Update ActivityInfo resource') }}
+                </span>
+            </button>
+        </p>
+    {% endif %}
     {% endif %}
 
 {% endblock %}
