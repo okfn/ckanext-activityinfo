@@ -8,12 +8,14 @@ from ckanext.activityinfo.blueprints import (
     activity_info as activity_info_bp,
     admin as activity_info_admin_bp
 )
+from ckanext.activityinfo import cli as cli_commands
 
 
 class ActivityinfoPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IBlueprint)
+    plugins.implements(plugins.IClick)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.ITemplateHelpers)
 
@@ -63,3 +65,8 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
             activity_info_bp.activityinfo_bp,
             activity_info_admin_bp.activityinfo_admin_blueprint,
         ]
+
+    # IClick
+
+    def get_commands(self):
+        return [cli_commands.activityinfo]
