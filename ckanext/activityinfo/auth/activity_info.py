@@ -1,3 +1,10 @@
+"""
+In general, we only check the user has an ActivityInfo API key, not whether the key
+has access to the specific form or database. The ActivityInfo API has no lightweight
+permissions-check endpoint, so background jobs will fail with a clear error
+if the key lacks permissions on the form.
+"""
+
 import logging
 from ckan.plugins import toolkit
 from ckanext.activityinfo.utils import get_user_token
