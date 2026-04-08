@@ -53,15 +53,7 @@
     }
 
     function pollResourceStatus(resourceId, statusLabel) {
-        var headers = { 'Content-Type': 'application/json' };
-        var csrfToken = getCSRFToken();
-        if (csrfToken) headers['X-CSRFToken'] = csrfToken;
-
-        fetch('/api/action/resource_show', {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({ id: resourceId })
-        })
+        fetch('/api/action/resource_show?id=' + encodeURIComponent(resourceId))
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!data.success) {
