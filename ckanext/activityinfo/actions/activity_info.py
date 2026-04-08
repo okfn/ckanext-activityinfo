@@ -142,7 +142,7 @@ def act_info_update_resource_file(context, data_dict):
     '''
     toolkit.check_access('act_info_update_resource_file', context, data_dict)
     resource_id = data_dict.get('resource_id')
-    user_name = data_dict.get('user')
+    user_name = data_dict.get('user') or context.get('user')
     if not resource_id:
         raise toolkit.ValidationError({'resource_id': 'Missing value'})
     log.info(f"ActivityInfo: Updating resource {resource_id} with downloaded file")
@@ -155,4 +155,4 @@ def act_info_update_resource_file(context, data_dict):
     )
 
     log.info(f"ActivityInfo: Enqueued download job for resource {resource_id} with job ID {job.id}")
-    return job
+    return {'job_id': job.id, 'resource_id': resource_id}
