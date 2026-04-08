@@ -142,7 +142,7 @@ def act_info_update_resource_file(context, data_dict):
     '''
     toolkit.check_access('act_info_update_resource_file', context, data_dict)
     resource_id = data_dict.get('resource_id')
-    user_name = data_dict.get('user') or context.get('user')
+    user_name = context.get('user')
     if not resource_id:
         raise toolkit.ValidationError({'resource_id': 'Missing value'})
     log.info(f"ActivityInfo: Updating resource {resource_id} with downloaded file")
