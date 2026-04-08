@@ -21,3 +21,5 @@ class ActivityInfoResource(factories.Resource):
     activityinfo_progress = 100
     activityinfo_error = ''
     activityinfo_format = 'csv'
+    activityinfo_auto_update = 'never'
+    activityinfo_auto_update_runs = 1
