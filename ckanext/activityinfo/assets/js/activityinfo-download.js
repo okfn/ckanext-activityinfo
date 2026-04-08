@@ -247,8 +247,9 @@ ckan.module('activityinfo-download', function($) {
             
             if (this.formSelect.value) {
                 this.el.querySelector('#ai-step-format').style.display = 'block';
+                this.el.querySelector('#ai-step-auto-update').style.display = 'block';
                 this.infoDiv.style.display = 'block';
-                
+
                 // Restore format selection if editing
                 if (this.formatsField.value) {
                     var formats = this.formatsField.value.split(',');
@@ -258,6 +259,7 @@ ckan.module('activityinfo-download', function($) {
                 }
             } else {
                 this.el.querySelector('#ai-step-format').style.display = 'none';
+                this.el.querySelector('#ai-step-auto-update').style.display = 'none';
                 this.infoDiv.style.display = 'none';
             }
         },
