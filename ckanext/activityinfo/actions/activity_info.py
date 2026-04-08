@@ -4,6 +4,7 @@ from ckan.plugins import toolkit
 from ckanext.activityinfo.utils import get_user_token
 from ckanext.activityinfo.data.base import ActivityInfoClient
 from ckanext.activityinfo.exceptions import ActivityInfoConnectionError
+from ckanext.activityinfo.jobs.download import download_activityinfo_resource
 
 
 log = logging.getLogger(__name__)
@@ -133,3 +134,25 @@ def act_info_get_job_status(context, data_dict):
         raise ActivityInfoConnectionError(error)
 
     return job_status
+
+
+def act_info_update_resource_file(context, data_dict):
+    '''
+    Action function to update a CKAN resource with the downloaded ActivityInfo file.
+    '''
+    toolkit.check_access('act_info_update_resource_file', context, data_dict)
+    resource_id = data_dict.get('resource_id')
+    user_name = context.get('user')
+    if not resource_id:
+        raise toolkit.ValidationError({'resource_id': 'Missing value'})
+    log.info(f"ActivityInfo: Updating resource {resource_id} with downloaded file")
+    # Enqueue the download job, this will update the file and related metadata
+    job = toolkit.enqueue_job(
+        download_activityinfo_resource,
+        [resource_id, user_name],
+        title=f"Download ActivityInfo for resource {resource_id}",
+        rq_kwargs={'timeout': 600}
+    )
+
+    log.info(f"ActivityInfo: Enqueued download job for resource {resource_id} with job ID {job.id}")
+    return {'job_id': job.id, 'resource_id': resource_id}

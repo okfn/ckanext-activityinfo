@@ -4,6 +4,7 @@ import pytest
 from ckan.plugins import toolkit
 from ckantoolkit.tests import factories as ckan_factories
 from ckanext.activityinfo.tests import factories
+from ckanext.activityinfo.jobs.download import download_activityinfo_resource
 
 
 @pytest.fixture
@@ -189,3 +190,77 @@ class TestDownloadActions:
             )
 
         assert 'job_id' in str(exc_info.value)
+
+
+@pytest.mark.usefixtures("clean_db")
+class TestUpdateResourceFileAction:
+
+    def test_update_resource_file_enqueues_job(self, setup_data):
+        """Test that act_info_update_resource_file enqueues a background job"""
+        user_name = setup_data.activityinfo_user['name']
+        resource = factories.ActivityInfoResource()
+
+        with mock.patch('ckanext.activityinfo.actions.activity_info.toolkit.enqueue_job') as mock_enqueue:
+            mock_enqueue.return_value = mock.Mock(id='rq_job_123')
+
+            result = toolkit.get_action('act_info_update_resource_file')(
+                context={'user': user_name},
+                data_dict={'resource_id': resource['id']}
+            )
+
+            assert result['job_id'] == 'rq_job_123'
+            assert result['resource_id'] == resource['id']
+            mock_enqueue.assert_called_once_with(
+                download_activityinfo_resource,
+                [resource['id'], user_name],
+                title=f"Download ActivityInfo for resource {resource['id']}",
+                rq_kwargs={'timeout': 600}
+            )
+
+    def test_update_resource_file_missing_resource_id(self, setup_data):
+        """Test that act_info_update_resource_file raises error when resource_id is missing"""
+        user_name = setup_data.activityinfo_user['name']
+
+        with pytest.raises(toolkit.ValidationError) as exc_info:
+            toolkit.get_action('act_info_update_resource_file')(
+                context={'user': user_name},
+                data_dict={}
+            )
+
+        assert 'resource_id' in str(exc_info.value)
+
+    def test_update_resource_file_uses_context_user(self, setup_data):
+        """Test that the action falls back to context user when no user in data_dict"""
+        user_name = setup_data.activityinfo_user['name']
+        resource = factories.ActivityInfoResource()
+
+        with mock.patch('ckanext.activityinfo.actions.activity_info.toolkit.enqueue_job') as mock_enqueue:
+            mock_enqueue.return_value = mock.Mock(id='rq_job_456')
+
+            toolkit.get_action('act_info_update_resource_file')(
+                context={'user': user_name},
+                data_dict={'resource_id': resource['id']}
+            )
+
+            call_args = mock_enqueue.call_args[0]
+            assert call_args[1] == [resource['id'], user_name]
+
+    def test_update_resource_file_unauthorized_anonymous(self, setup_data):
+        """Test that anonymous users cannot update resource files"""
+        resource = factories.ActivityInfoResource()
+
+        with pytest.raises(toolkit.NotAuthorized):
+            toolkit.get_action('act_info_update_resource_file')(
+                context={'user': ''},
+                data_dict={'resource_id': resource['id']}
+            )
+
+    def test_update_resource_file_unauthorized_no_api_key(self, setup_data):
+        """Test that users without an ActivityInfo API key cannot update"""
+        resource = factories.ActivityInfoResource()
+
+        with pytest.raises(toolkit.NotAuthorized):
+            toolkit.get_action('act_info_update_resource_file')(
+                context={'user': setup_data.regular_user['name']},
+                data_dict={'resource_id': resource['id']}
+            )

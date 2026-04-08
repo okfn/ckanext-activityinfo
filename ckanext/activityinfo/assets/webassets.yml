@@ -5,6 +5,7 @@ activityinfo-js:
     - js/activityinfo.js
     - js/activityinfo-download.js
     - js/activityinfo-select-formats.js
+    - js/activityinfo-update.js
   extra:
     preload:
       - base/main
