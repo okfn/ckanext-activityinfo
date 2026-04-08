@@ -9,3 +9,15 @@ def _generate_plugin_extras(user):
 
 class ActivityInfoUser(factories.UserWithToken):
     plugin_extras = factory.LazyAttribute(_generate_plugin_extras)
+
+
+class ActivityInfoResource(factories.Resource):
+    url = 'activityinfo.waiting.csv'
+    format = 'CSV'
+    activityinfo_form_id = factory.Sequence(lambda n: "form_{0:05d}".format(n))
+    activityinfo_database_id = factory.Sequence(lambda n: "db_{0:05d}".format(n))
+    activityinfo_form_label = 'Test Form'
+    activityinfo_status = 'complete'
+    activityinfo_progress = 100
+    activityinfo_error = ''
+    activityinfo_format = 'csv'
