@@ -6,6 +6,31 @@ from ckanext.activityinfo.jobs.download import download_activityinfo_resource
 
 log = logging.getLogger(__name__)
 
+VALID_AUTO_UPDATE_VALUES = ('never', 'daily', 'weekly')
+
+
+def _validate_auto_update_fields(data_dict):
+    """Validate activityinfo_auto_update and activityinfo_auto_update_runs fields."""
+    errors = {}
+
+    auto_update = data_dict.get('activityinfo_auto_update')
+    if auto_update and auto_update not in VALID_AUTO_UPDATE_VALUES:
+        errors['activityinfo_auto_update'] = (
+            f'Invalid value. Must be one of: {", ".join(VALID_AUTO_UPDATE_VALUES)}'
+        )
+
+    auto_update_runs = data_dict.get('activityinfo_auto_update_runs')
+    if auto_update_runs is not None and auto_update_runs != '':
+        try:
+            runs = int(auto_update_runs)
+            if runs < 1 or runs > 20:
+                errors['activityinfo_auto_update_runs'] = 'Must be between 1 and 20'
+        except (ValueError, TypeError):
+            errors['activityinfo_auto_update_runs'] = 'Must be a number between 1 and 20'
+
+    if errors:
+        raise toolkit.ValidationError(errors)
+
 
 @toolkit.chained_action
 def resource_create(original_action, context, data_dict):
@@ -13,6 +38,9 @@ def resource_create(original_action, context, data_dict):
         We must create one or more resources depending on the selected formats.
         Users can check more than one format, so we create a resource per format.
     """
+
+    # Validate auto-update fields regardless of url_type
+    _validate_auto_update_fields(data_dict)
 
     # url_type = activityinfo means we are creating an ActivityInfo resource
     if data_dict.get('url_type') != 'activityinfo':
@@ -103,3 +131,10 @@ def resource_create(original_action, context, data_dict):
 
     # Return the first result (standard CKAN behavior expects single resource)
     return first_result
+
+
+@toolkit.chained_action
+def resource_update(original_action, context, data_dict):
+    """Chain resource_update to validate ActivityInfo auto-update fields."""
+    _validate_auto_update_fields(data_dict)
+    return original_action(context, data_dict)

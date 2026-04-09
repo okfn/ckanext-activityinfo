@@ -74,16 +74,50 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- Auto-update settings for existing ActivityInfo resources -->
+        <div class="activityinfo-auto-update-settings" style="margin-top: 15px;">
+            <label class="form-label">{{ _('Automatic Update') }}</label>
+            <p class="help-block">{{ _('Schedule automatic updates from ActivityInfo.') }}</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label" for="ai-auto-update">{{ _('Update Frequency') }}</label>
+                    <select name="activityinfo_auto_update" id="ai-auto-update" class="form-control">
+                        <option value="never" {{ 'selected' if data.get('activityinfo_auto_update', 'never') == 'never' }}>{{ _('Never') }}</option>
+                        <option value="daily" {{ 'selected' if data.get('activityinfo_auto_update') == 'daily' }}>{{ _('Daily') }}</option>
+                        <option value="weekly" {{ 'selected' if data.get('activityinfo_auto_update') == 'weekly' }}>{{ _('Weekly') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="ai-auto-update-runs">{{ _('Number of Updates') }}</label>
+                    <input type="number" name="activityinfo_auto_update_runs" id="ai-auto-update-runs"
+                        class="form-control" min="1" max="20"
+                        value="{{ data.get('activityinfo_auto_update_runs', 1) }}"
+                        placeholder="1-20" />
+                    <p class="help-block">{{ _('How many times the automatic update should run (1 to 20).') }}</p>
+                </div>
+            </div>
+        </div>
+
         {# we only allow to clean and change upload for non-activityinfo resources #}
         {# here we just send the upload field as is #}
         <input type="hidden" name="url_type" value="{{ data.url_type }}" />
         <input type="hidden" name="url" value="{{ data.url }}" />
+        {# Preserve ActivityInfo metadata on edit #}
+        <input type="hidden" name="activityinfo_database_id" value="{{ data.get('activityinfo_database_id', '') }}" />
+        <input type="hidden" name="activityinfo_form_id" value="{{ data.get('activityinfo_form_id', '') }}" />
+        <input type="hidden" name="activityinfo_form_label" value="{{ data.get('activityinfo_form_label', '') }}" />
+        <input type="hidden" name="activityinfo_status" value="{{ data.get('activityinfo_status', '') }}" />
+        <input type="hidden" name="activityinfo_progress" value="{{ data.get('activityinfo_progress', 0) }}" />
+        <input type="hidden" name="activityinfo_error" value="{{ data.get('activityinfo_error', '') }}" />
+        <input type="hidden" name="activityinfo_format" value="{{ data.get('activityinfo_format', '') }}" />
     {% else %}
         {# we only allow to clean and change upload for non-activityinfo resources #}
         {{ super() }}
     {% endif %}
 
-    <!-- Hidden fields to store selection for form submission -->
+    <!-- Hidden fields for new resource form submission only -->
+    {% if user_with_ai_api_key and not data.get('id') %}
     <input type="hidden" name="activityinfo_database_id" id="ai-database-id-field" value="{{ data.get('activityinfo_database_id', '') }}">
     <input type="hidden" name="activityinfo_form_id" id="ai-form-id-field" value="{{ data.get('activityinfo_form_id', '') }}">
     <input type="hidden" name="activityinfo_formats" id="ai-formats-field" value="{{ data.get('activityinfo_formats', 'csv') }}">
@@ -91,7 +125,9 @@
     <input type="hidden" name="activityinfo_status" id="ai-status-field" value="{{ data.get('activityinfo_status', '') }}">
     <input type="hidden" name="activityinfo_progress" id="ai-progress-field" value="{{ data.get('activityinfo_progress', 0) }}">
     <input type="hidden" name="activityinfo_error" id="ai-error-field" value="{{ data.get('activityinfo_error', '') }}">
-
+    <input type="hidden" name="activityinfo_auto_update" id="ai-auto-update-field" value="{{ data.get('activityinfo_auto_update', 'never') }}">
+    <input type="hidden" name="activityinfo_auto_update_runs" id="ai-auto-update-runs-field" value="{{ data.get('activityinfo_auto_update_runs', 1) }}">
+    {% endif %}
 
     {% if user_with_ai_api_key and not data.get('id') %}
         {# Use url_type=activityinfo for the radio, but it will be converted to url_type=upload on save #}
@@ -136,6 +172,30 @@
                 </div>
             </div>
             <div id="ai-format-error" class="text-danger" style="display:none;">{{ _('Please select at least one format.') }}</div>
+        </div>
+
+        <!-- Step 4: Auto-update settings -->
+        <div id="ai-step-auto-update" class="control-group" style="display:none;">
+            <label class="form-label">{{ _('Automatic Update') }}</label>
+            <p class="help-block">{{ _('Schedule automatic updates from ActivityInfo.') }}</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label" for="ai-auto-update-new">{{ _('Update Frequency') }}</label>
+                    <select id="ai-auto-update-new" class="form-control"
+                        onchange="document.getElementById('ai-auto-update-field').value = this.value;">
+                        <option value="never">{{ _('Never') }}</option>
+                        <option value="daily">{{ _('Daily') }}</option>
+                        <option value="weekly">{{ _('Weekly') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="ai-auto-update-runs-new">{{ _('Number of Updates') }}</label>
+                    <input type="number" id="ai-auto-update-runs-new" class="form-control"
+                        min="1" max="20" value="1" placeholder="1-20"
+                        onchange="document.getElementById('ai-auto-update-runs-field').value = this.value;" />
+                    <p class="help-block">{{ _('How many times the automatic update should run (1 to 20).') }}</p>
+                </div>
+            </div>
         </div>
 
         <!-- Info message -->

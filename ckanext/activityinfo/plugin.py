@@ -37,6 +37,7 @@ class ActivityinfoPlugin(plugins.SingletonPlugin):
             'act_start_download_job': activity_info_actions.act_start_download_job,
             'act_info_update_resource_file': activity_info_actions.act_info_update_resource_file,
             'resource_create': activityinfo_res_actions.resource_create,
+            'resource_update': activityinfo_res_actions.resource_update,
         }
 
     # IAuthFunctions
