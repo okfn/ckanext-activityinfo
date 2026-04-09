@@ -201,3 +201,118 @@ class TestAutoUpdateFieldsOnUpdate:
                 }
             )
         assert 'activityinfo_auto_update_runs' in exc_info.value.error_dict
+
+
+@pytest.mark.usefixtures("clean_db")
+class TestActivityInfoMetadataPreservedOnUpdate:
+    """Ensure ActivityInfo metadata fields survive resource updates.
+
+    When a user edits a resource (e.g. changes the name), the ActivityInfo
+    fields (form_id, status, etc.) must not be wiped.
+    """
+
+    def test_metadata_preserved_when_updating_name(self, setup_data):
+        """Updating only the name should preserve all ActivityInfo fields."""
+        user_name = setup_data.activityinfo_user['name']
+        resource = factories.ActivityInfoResource(
+            activityinfo_form_id='form_abc',
+            activityinfo_database_id='db_xyz',
+            activityinfo_form_label='My Form',
+            activityinfo_status='complete',
+            activityinfo_progress=100,
+            activityinfo_format='csv',
+            activityinfo_auto_update='daily',
+            activityinfo_auto_update_runs=5,
+        )
+
+        updated = toolkit.get_action('resource_update')(
+            context={'user': user_name},
+            data_dict={
+                'id': resource['id'],
+                'package_id': resource['package_id'],
+                'url': resource['url'],
+                'name': 'New Resource Name',
+                # Simulates what the form submits via hidden fields
+                'activityinfo_form_id': resource['activityinfo_form_id'],
+                'activityinfo_database_id': resource['activityinfo_database_id'],
+                'activityinfo_form_label': resource['activityinfo_form_label'],
+                'activityinfo_status': resource['activityinfo_status'],
+                'activityinfo_progress': resource['activityinfo_progress'],
+                'activityinfo_format': resource['activityinfo_format'],
+                'activityinfo_auto_update': resource['activityinfo_auto_update'],
+                'activityinfo_auto_update_runs': resource['activityinfo_auto_update_runs'],
+            }
+        )
+
+        assert updated['name'] == 'New Resource Name'
+        assert updated['activityinfo_form_id'] == 'form_abc'
+        assert updated['activityinfo_database_id'] == 'db_xyz'
+        assert updated['activityinfo_form_label'] == 'My Form'
+        assert updated['activityinfo_status'] == 'complete'
+        assert int(updated['activityinfo_progress']) == 100
+        assert updated['activityinfo_format'] == 'csv'
+        assert updated['activityinfo_auto_update'] == 'daily'
+        assert int(updated['activityinfo_auto_update_runs']) == 5
+
+    def test_metadata_preserved_when_changing_auto_update(self, setup_data):
+        """Changing auto-update settings should preserve other AI fields."""
+        user_name = setup_data.activityinfo_user['name']
+        resource = factories.ActivityInfoResource(
+            activityinfo_form_id='form_123',
+            activityinfo_database_id='db_456',
+            activityinfo_form_label='Test Form',
+            activityinfo_status='complete',
+            activityinfo_format='xlsx',
+            activityinfo_auto_update='never',
+            activityinfo_auto_update_runs=1,
+        )
+
+        updated = toolkit.get_action('resource_update')(
+            context={'user': user_name},
+            data_dict={
+                'id': resource['id'],
+                'package_id': resource['package_id'],
+                'url': resource['url'],
+                'activityinfo_form_id': resource['activityinfo_form_id'],
+                'activityinfo_database_id': resource['activityinfo_database_id'],
+                'activityinfo_form_label': resource['activityinfo_form_label'],
+                'activityinfo_status': resource['activityinfo_status'],
+                'activityinfo_format': resource['activityinfo_format'],
+                'activityinfo_auto_update': 'weekly',
+                'activityinfo_auto_update_runs': 10,
+            }
+        )
+
+        assert updated['activityinfo_form_id'] == 'form_123'
+        assert updated['activityinfo_database_id'] == 'db_456'
+        assert updated['activityinfo_form_label'] == 'Test Form'
+        assert updated['activityinfo_status'] == 'complete'
+        assert updated['activityinfo_format'] == 'xlsx'
+        assert updated['activityinfo_auto_update'] == 'weekly'
+        assert int(updated['activityinfo_auto_update_runs']) == 10
+
+    def test_resource_still_detected_as_activityinfo_after_update(self, setup_data):
+        """After update, is_activityinfo_resource should still return True."""
+        user_name = setup_data.activityinfo_user['name']
+        resource = factories.ActivityInfoResource(
+            activityinfo_form_id='form_detect',
+        )
+
+        updated = toolkit.get_action('resource_update')(
+            context={'user': user_name},
+            data_dict={
+                'id': resource['id'],
+                'package_id': resource['package_id'],
+                'url': resource['url'],
+                'name': 'Changed Name',
+                'activityinfo_form_id': resource['activityinfo_form_id'],
+                'activityinfo_database_id': resource.get('activityinfo_database_id', ''),
+                'activityinfo_form_label': resource.get('activityinfo_form_label', ''),
+                'activityinfo_status': resource.get('activityinfo_status', ''),
+                'activityinfo_format': resource.get('activityinfo_format', ''),
+            }
+        )
+
+        from ckanext.activityinfo.helpers import is_activityinfo_resource
+        assert is_activityinfo_resource(updated) is True
+        assert updated['activityinfo_form_id'] == 'form_detect'
