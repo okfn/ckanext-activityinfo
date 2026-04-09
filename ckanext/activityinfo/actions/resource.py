@@ -14,13 +14,13 @@ def _validate_auto_update_fields(data_dict):
     errors = {}
 
     auto_update = data_dict.get('activityinfo_auto_update')
-    if auto_update is not None and auto_update not in VALID_AUTO_UPDATE_VALUES:
+    if auto_update and auto_update not in VALID_AUTO_UPDATE_VALUES:
         errors['activityinfo_auto_update'] = (
             f'Invalid value. Must be one of: {", ".join(VALID_AUTO_UPDATE_VALUES)}'
         )
 
     auto_update_runs = data_dict.get('activityinfo_auto_update_runs')
-    if auto_update_runs is not None:
+    if auto_update_runs is not None and auto_update_runs != '':
         try:
             runs = int(auto_update_runs)
             if runs < 1 or runs > 20:
