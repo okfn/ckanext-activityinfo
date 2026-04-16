@@ -3,7 +3,8 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 from ckan.plugins import toolkit
 from ckan import model
-from sqlalchemy import and_
+from sqlalchemy import and_, cast
+from sqlalchemy.dialects.postgresql import JSONB
 
 
 log = logging.getLogger(__name__)
@@ -12,6 +13,10 @@ log = logging.getLogger(__name__)
 # 'never' means auto-update is disabled.
 VALID_AUTO_UPDATE_VALUES = ('never', 'daily', 'weekly')
 SCHEDULABLE_AUTO_UPDATE_VALUES = ('daily', 'weekly')
+
+# Resource.extras is stored as UnicodeText (JSON string), not native JSONB.
+# Cast it to JSONB so we can use PostgreSQL JSON operators in queries.
+_extras_jsonb = cast(model.Resource.extras, JSONB)
 
 
 def get_activity_info_user_plugin_extras(user_name_or_id):
@@ -61,7 +66,7 @@ def get_ckan_resources(form_id):
     resources = model.Session.query(model.Resource).filter(
         and_(
             model.Resource.state == 'active',
-            model.Resource.extras['activityinfo_form_id'].astext == form_id,
+            _extras_jsonb['activityinfo_form_id'].astext == form_id,
         )
     ).all()
 
@@ -91,7 +96,7 @@ def get_ai_resources(limit=100):
     resources = model.Session.query(model.Resource).filter(
         and_(
             model.Resource.state == 'active',
-            model.Resource.extras['activityinfo_status'].astext == 'complete',
+            _extras_jsonb['activityinfo_status'].astext == 'complete',
         )
     ).limit(limit).all()
 
@@ -161,8 +166,8 @@ def get_resources_due_for_auto_update():
     resources = model.Session.query(model.Resource).filter(
         and_(
             model.Resource.state == 'active',
-            model.Resource.extras['activityinfo_status'].astext == 'complete',
-            model.Resource.extras['activityinfo_auto_update'].astext.in_(
+            _extras_jsonb['activityinfo_status'].astext == 'complete',
+            _extras_jsonb['activityinfo_auto_update'].astext.in_(
                 SCHEDULABLE_AUTO_UPDATE_VALUES
             ),
         )
