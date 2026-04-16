@@ -35,3 +35,7 @@ forms.add_command(cli_forms.get_activityinfo_forms_list)
 # ckan activityinfo resources update-activity-info-resource -r xxxxx -u username
 # The user should have permissions to access the ActivityInfo API (API key) and the resource to update
 resources.add_command(cli_resources.update_activityinfo_resource)
+
+# ckan activityinfo resources sync-auto-updates [--dry-run] [-v]
+# Find and update all resources due for automatic update (meant for cron)
+resources.add_command(cli_resources.sync_auto_updates)
