@@ -85,6 +85,9 @@ def resource_create(original_action, context, data_dict):
         resource_data['activityinfo_progress'] = 0
         resource_data['activityinfo_error'] = ''
 
+        # Store which user created this resource (for auto-update auth)
+        resource_data['activityinfo_user'] = user
+
         # Set name with format suffix if multiple formats
         if len(formats) > 1:
             resource_data['name'] = f"{form_label} ({format_type.upper()})"

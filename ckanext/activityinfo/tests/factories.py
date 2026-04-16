@@ -25,3 +25,4 @@ class ActivityInfoResource(factories.Resource):
     activityinfo_auto_update_runs = 1
     activityinfo_last_updated = ''
     activityinfo_auto_update_count = 0
+    activityinfo_user = ''
