@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from ckan.plugins import toolkit
 from ckan import model
@@ -6,6 +7,11 @@ from sqlalchemy import and_
 
 
 log = logging.getLogger(__name__)
+
+# Valid values for the activityinfo_auto_update field.
+# 'never' means auto-update is disabled.
+VALID_AUTO_UPDATE_VALUES = ('never', 'daily', 'weekly')
+SCHEDULABLE_AUTO_UPDATE_VALUES = ('daily', 'weekly')
 
 
 def get_activity_info_user_plugin_extras(user_name_or_id):
@@ -51,22 +57,26 @@ def get_ckan_resources(form_id):
         form_id: The ActivityInfo form ID
     Returns:
         A list of tuples (resource_name, resource_url)
-
     """
-    search_dict = {'query': f'activityinfo_form_id:{form_id}'}
-    resources = toolkit.get_action('resource_search')({'ignore_auth': True}, search_dict)
+    resources = model.Session.query(model.Resource).filter(
+        and_(
+            model.Resource.state == 'active',
+            model.Resource.extras['activityinfo_form_id'].astext == form_id,
+        )
+    ).all()
+
     ret = []
-    if resources.get('count', 0) > 0:
-        results = resources['results']
-        for res in results:
-            pkg = toolkit.get_action('package_show')(
-                {'ignore_auth': True}, {'id': res['package_id']}
-            )
-            pkg_type = pkg.get('type', 'dataset')
-            resource_url = toolkit.url_for(f'{pkg_type}_resource.read', id=pkg['name'], resource_id=res['id'])
-            ret.append(
-                (res.get('name', 'Unnamed resource'), resource_url)
-            )
+    for res in resources:
+        pkg = toolkit.get_action('package_show')(
+            {'ignore_auth': True}, {'id': res.package_id}
+        )
+        pkg_type = pkg.get('type', 'dataset')
+        resource_url = toolkit.url_for(
+            f'{pkg_type}_resource.read', id=pkg['name'], resource_id=res.id
+        )
+        ret.append(
+            (res.name or 'Unnamed resource', resource_url)
+        )
 
     return ret
 
@@ -77,25 +87,27 @@ def get_ai_resources(limit=100):
         limit: Maximum number of resources to return, default 100
     Returns:
         A list of resources with their URLs
-
     """
-    search_dict = {
-        'query': 'activityinfo_status:complete',
-        'limit': limit,
-    }
-    resources = toolkit.get_action('resource_search')({'ignore_auth': True}, search_dict)
+    resources = model.Session.query(model.Resource).filter(
+        and_(
+            model.Resource.state == 'active',
+            model.Resource.extras['activityinfo_status'].astext == 'complete',
+        )
+    ).limit(limit).all()
+
     ret = []
-    if resources.get('count', 0) > 0:
-        results = resources['results']
-        for res in results:
-            pkg = toolkit.get_action('package_show')(
-                {'ignore_auth': True}, {'id': res['package_id']}
-            )
-            pkg_type = pkg.get('type', 'dataset')
-            resource_url = toolkit.url_for(f'{pkg_type}_resource.read', id=pkg['name'], resource_id=res['id'])
-            res['final_url'] = resource_url
-            res['package'] = pkg
-            ret.append(res)
+    for res in resources:
+        pkg = toolkit.get_action('package_show')(
+            {'ignore_auth': True}, {'id': res.package_id}
+        )
+        pkg_type = pkg.get('type', 'dataset')
+        resource_url = toolkit.url_for(
+            f'{pkg_type}_resource.read', id=pkg['name'], resource_id=res.id
+        )
+        res_dict = res.as_dict()
+        res_dict['final_url'] = resource_url
+        res_dict['package'] = pkg
+        ret.append(res_dict)
 
     return ret
 
@@ -128,6 +140,84 @@ def get_users_with_activity_info_token():
         })
 
     return final_users
+
+
+def get_resources_due_for_auto_update():
+    """Find all ActivityInfo resources that are due for automatic update.
+
+    A resource is due when:
+    - activityinfo_auto_update is 'daily' or 'weekly'
+    - activityinfo_status is 'complete' (not currently processing)
+    - activityinfo_auto_update_count < activityinfo_auto_update_runs
+    - Enough time has passed since activityinfo_last_updated
+      (24h for daily, 7 days for weekly), or never updated yet
+
+    Returns:
+        A list of resource dicts that need updating.
+    """
+    now = datetime.now(timezone.utc)
+
+    # Query resources with auto-update enabled and status complete
+    resources = model.Session.query(model.Resource).filter(
+        and_(
+            model.Resource.state == 'active',
+            model.Resource.extras['activityinfo_status'].astext == 'complete',
+            model.Resource.extras['activityinfo_auto_update'].astext.in_(
+                SCHEDULABLE_AUTO_UPDATE_VALUES
+            ),
+        )
+    ).all()
+
+    due_resources = []
+    for res in resources:
+        extras = res.extras or {}
+        frequency = extras.get('activityinfo_auto_update')
+        max_runs = _safe_int(extras.get('activityinfo_auto_update_runs'), 1)
+        current_count = _safe_int(extras.get('activityinfo_auto_update_count'), 0)
+
+        # Check run limit
+        if current_count >= max_runs:
+            log.debug(
+                f"Skipping resource {res.id}: "
+                f"run limit reached ({current_count}/{max_runs})"
+            )
+            continue
+
+        # Check timing
+        last_updated = extras.get('activityinfo_last_updated')
+        if last_updated:
+            try:
+                last_dt = datetime.fromisoformat(last_updated)
+                if last_dt.tzinfo is None:
+                    last_dt = last_dt.replace(tzinfo=timezone.utc)
+                if frequency == 'daily' and (now - last_dt) < timedelta(hours=24):
+                    log.debug(
+                        f"Skipping resource {res.id}: "
+                        f"last updated {last_updated}, not yet due (daily)"
+                    )
+                    continue
+                if frequency == 'weekly' and (now - last_dt) < timedelta(days=7):
+                    log.debug(
+                        f"Skipping resource {res.id}: "
+                        f"last updated {last_updated}, not yet due (weekly)"
+                    )
+                    continue
+            except (ValueError, TypeError):
+                pass
+
+        due_resources.append(res.as_dict())
+
+    return due_resources
+
+
+def _safe_int(value, default=0):
+    """Safely convert a value to int, returning default on failure."""
+    if value is None or value == '':
+        return default
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
 
 
 def require_sysadmin_user(func):

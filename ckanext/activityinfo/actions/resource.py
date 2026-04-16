@@ -2,11 +2,10 @@ import logging
 
 from ckan.plugins import toolkit
 from ckanext.activityinfo.jobs.download import download_activityinfo_resource
+from ckanext.activityinfo.utils import VALID_AUTO_UPDATE_VALUES
 
 
 log = logging.getLogger(__name__)
-
-VALID_AUTO_UPDATE_VALUES = ('never', 'daily', 'weekly')
 
 
 def _validate_auto_update_fields(data_dict):
