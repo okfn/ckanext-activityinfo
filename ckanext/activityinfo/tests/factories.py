@@ -23,3 +23,5 @@ class ActivityInfoResource(factories.Resource):
     activityinfo_format = 'csv'
     activityinfo_auto_update = 'never'
     activityinfo_auto_update_runs = 1
+    activityinfo_last_updated = ''
+    activityinfo_auto_update_count = 0
