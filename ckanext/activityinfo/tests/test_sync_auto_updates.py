@@ -1,7 +1,7 @@
 """Tests for auto-update sync logic (utils + CLI command)."""
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest import mock
 
 import pytest
 from click.testing import CliRunner
@@ -11,10 +11,6 @@ from ckantoolkit.tests import factories as ckan_factories
 from ckanext.activityinfo.cli.resources import sync_auto_updates
 from ckanext.activityinfo.tests import factories
 from ckanext.activityinfo.utils import get_resources_due_for_auto_update
-
-# Captured BEFORE any @patch of toolkit.get_action so tests can call the real
-# action dispatcher without re-entering the mock (which causes recursion).
-_REAL_GET_ACTION = toolkit.get_action
 
 
 @pytest.fixture
@@ -202,8 +198,7 @@ class TestGetResourcesDueForAutoUpdate:
 class TestSyncAutoUpdatesCounterAndTimestamp:
     """Test that the sync command updates counter and timestamp correctly."""
 
-    @patch('ckanext.activityinfo.cli.resources.toolkit.get_action')
-    def test_counter_incremented_after_enqueue(self, mock_get_action, setup_data):
+    def test_counter_incremented_after_enqueue(self, setup_data):
         """After enqueuing a job, counter should be incremented."""
         user_name = setup_data.activityinfo_user['name']
         resource = factories.ActivityInfoResource(
@@ -214,28 +209,25 @@ class TestSyncAutoUpdatesCounterAndTimestamp:
             activityinfo_user=user_name,
         )
 
-        # Mock only act_info_update_resource_file, let others pass through
-        original_get_action = _REAL_GET_ACTION
+        def fake_update(ctx, dd):
+            return {'job_id': 'test-job', 'resource_id': dd['resource_id']}
 
-        def selective_mock(action_name):
-            if action_name == 'act_info_update_resource_file':
-                return lambda ctx, dd: {'job_id': 'test-job', 'resource_id': dd['resource_id']}
-            return original_get_action(action_name)
+        with mock.patch.dict(
+            'ckan.logic._actions',
+            {'act_info_update_resource_file': fake_update},
+        ):
+            runner = CliRunner()
+            result = runner.invoke(sync_auto_updates, [])
 
-        mock_get_action.side_effect = selective_mock
-
-        runner = CliRunner()
-        result = runner.invoke(sync_auto_updates, [])
         assert result.exit_code == 0
 
-        updated = original_get_action('resource_show')(
+        updated = toolkit.get_action('resource_show')(
             {'ignore_auth': True}, {'id': resource['id']}
         )
         assert int(updated['activityinfo_auto_update_count']) == 1
         assert updated['activityinfo_last_updated'] != ''
 
-    @patch('ckanext.activityinfo.cli.resources.toolkit.get_action')
-    def test_counter_not_incremented_on_failure(self, mock_get_action, setup_data):
+    def test_counter_not_incremented_on_failure(self, setup_data):
         """If enqueuing fails, counter should not change."""
         user_name = setup_data.activityinfo_user['name']
         resource = factories.ActivityInfoResource(
@@ -246,26 +238,24 @@ class TestSyncAutoUpdatesCounterAndTimestamp:
             activityinfo_user=user_name,
         )
 
-        original_get_action = _REAL_GET_ACTION
+        def fake_update(ctx, dd):
+            raise Exception("Enqueue failed")
 
-        def selective_mock(action_name):
-            if action_name == 'act_info_update_resource_file':
-                raise Exception("Enqueue failed")
-            return original_get_action(action_name)
+        with mock.patch.dict(
+            'ckan.logic._actions',
+            {'act_info_update_resource_file': fake_update},
+        ):
+            runner = CliRunner()
+            result = runner.invoke(sync_auto_updates, [])
 
-        mock_get_action.side_effect = selective_mock
-
-        runner = CliRunner()
-        result = runner.invoke(sync_auto_updates, [])
         assert '1 failed' in result.output
 
-        updated = original_get_action('resource_show')(
+        updated = toolkit.get_action('resource_show')(
             {'ignore_auth': True}, {'id': resource['id']}
         )
         assert int(updated['activityinfo_auto_update_count']) == 2
 
-    @patch('ckanext.activityinfo.cli.resources.toolkit.get_action')
-    def test_dry_run_does_not_update(self, mock_get_action, setup_data):
+    def test_dry_run_does_not_update(self, setup_data):
         """Dry run should not enqueue jobs or update anything."""
         user_name = setup_data.activityinfo_user['name']
         resource = factories.ActivityInfoResource(
@@ -276,21 +266,24 @@ class TestSyncAutoUpdatesCounterAndTimestamp:
             activityinfo_user=user_name,
         )
 
-        runner = CliRunner()
-        result = runner.invoke(sync_auto_updates, ['--dry-run'])
+        fake_update = mock.MagicMock()
+        with mock.patch.dict(
+            'ckan.logic._actions',
+            {'act_info_update_resource_file': fake_update},
+        ):
+            runner = CliRunner()
+            result = runner.invoke(sync_auto_updates, ['--dry-run'])
+
         assert result.exit_code == 0
         assert 'DRY RUN' in result.output
+        fake_update.assert_not_called()
 
-        # get_action should not have been called at all during dry run
-        mock_get_action.assert_not_called()
-
-        updated = _REAL_GET_ACTION('resource_show')(
+        updated = toolkit.get_action('resource_show')(
             {'ignore_auth': True}, {'id': resource['id']}
         )
         assert int(updated['activityinfo_auto_update_count']) == 0
 
-    @patch('ckanext.activityinfo.cli.resources.toolkit.get_action')
-    def test_resource_without_user_is_skipped(self, mock_get_action, setup_data):
+    def test_resource_without_user_is_skipped(self, setup_data):
         """Resources with no activityinfo_user should be skipped."""
         factories.ActivityInfoResource(
             activityinfo_auto_update='daily',
@@ -300,10 +293,16 @@ class TestSyncAutoUpdatesCounterAndTimestamp:
             activityinfo_user='',
         )
 
-        runner = CliRunner()
-        result = runner.invoke(sync_auto_updates, [])
+        fake_update = mock.MagicMock()
+        with mock.patch.dict(
+            'ckan.logic._actions',
+            {'act_info_update_resource_file': fake_update},
+        ):
+            runner = CliRunner()
+            result = runner.invoke(sync_auto_updates, [])
+
         assert '1 skipped' in result.output
-        mock_get_action.assert_not_called()
+        fake_update.assert_not_called()
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -317,8 +316,7 @@ class TestSyncAutoUpdatesCLIOutput:
         assert result.exit_code == 0
         assert 'No resources due for update' in result.output
 
-    @patch('ckanext.activityinfo.cli.resources.toolkit.get_action')
-    def test_summary_shows_counts(self, mock_get_action, setup_data):
+    def test_summary_shows_counts(self, setup_data):
         """Summary should show enqueued and failed counts."""
         user_name = setup_data.activityinfo_user['name']
         factories.ActivityInfoResource(
@@ -336,22 +334,20 @@ class TestSyncAutoUpdatesCLIOutput:
             activityinfo_user=user_name,
         )
 
-        original_get_action = _REAL_GET_ACTION
+        def fake_update(ctx, dd):
+            return {'job_id': 'test-job', 'resource_id': dd['resource_id']}
 
-        def selective_mock(action_name):
-            if action_name == 'act_info_update_resource_file':
-                return lambda ctx, dd: {'job_id': 'test-job', 'resource_id': dd['resource_id']}
-            return original_get_action(action_name)
+        with mock.patch.dict(
+            'ckan.logic._actions',
+            {'act_info_update_resource_file': fake_update},
+        ):
+            runner = CliRunner()
+            result = runner.invoke(sync_auto_updates, [])
 
-        mock_get_action.side_effect = selective_mock
-
-        runner = CliRunner()
-        result = runner.invoke(sync_auto_updates, [])
         assert '2 enqueued' in result.output
         assert '0 failed' in result.output
 
-    @patch('ckanext.activityinfo.cli.resources.toolkit.get_action')
-    def test_uses_per_resource_user(self, mock_get_action, setup_data):
+    def test_uses_per_resource_user(self, setup_data):
         """Each resource should use its own activityinfo_user."""
         user_a = setup_data.activityinfo_user['name']
         user_b = factories.ActivityInfoUser()['name']
@@ -372,20 +368,17 @@ class TestSyncAutoUpdatesCLIOutput:
         )
 
         calls = []
-        original_get_action = _REAL_GET_ACTION
 
-        def selective_mock(action_name):
-            if action_name == 'act_info_update_resource_file':
-                def fake_action(ctx, dd):
-                    calls.append(ctx.get('user'))
-                    return {'job_id': 'test-job', 'resource_id': dd['resource_id']}
-                return fake_action
-            return original_get_action(action_name)
+        def fake_update(ctx, dd):
+            calls.append(ctx.get('user'))
+            return {'job_id': 'test-job', 'resource_id': dd['resource_id']}
 
-        mock_get_action.side_effect = selective_mock
-
-        runner = CliRunner()
-        runner.invoke(sync_auto_updates, [])
+        with mock.patch.dict(
+            'ckan.logic._actions',
+            {'act_info_update_resource_file': fake_update},
+        ):
+            runner = CliRunner()
+            runner.invoke(sync_auto_updates, [])
 
         assert len(calls) == 2
         assert set(calls) == {user_a, user_b}
