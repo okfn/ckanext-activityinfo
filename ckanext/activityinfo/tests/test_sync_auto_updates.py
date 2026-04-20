@@ -12,6 +12,10 @@ from ckanext.activityinfo.cli.resources import sync_auto_updates
 from ckanext.activityinfo.tests import factories
 from ckanext.activityinfo.utils import get_resources_due_for_auto_update
 
+# Captured BEFORE any @patch of toolkit.get_action so tests can call the real
+# action dispatcher without re-entering the mock (which causes recursion).
+_REAL_GET_ACTION = toolkit.get_action
+
 
 @pytest.fixture
 def setup_data():
@@ -211,7 +215,7 @@ class TestSyncAutoUpdatesCounterAndTimestamp:
         )
 
         # Mock only act_info_update_resource_file, let others pass through
-        original_get_action = toolkit.get_action
+        original_get_action = _REAL_GET_ACTION
 
         def selective_mock(action_name):
             if action_name == 'act_info_update_resource_file':
@@ -242,7 +246,7 @@ class TestSyncAutoUpdatesCounterAndTimestamp:
             activityinfo_user=user_name,
         )
 
-        original_get_action = toolkit.get_action
+        original_get_action = _REAL_GET_ACTION
 
         def selective_mock(action_name):
             if action_name == 'act_info_update_resource_file':
@@ -280,7 +284,7 @@ class TestSyncAutoUpdatesCounterAndTimestamp:
         # get_action should not have been called at all during dry run
         mock_get_action.assert_not_called()
 
-        updated = toolkit.get_action('resource_show')(
+        updated = _REAL_GET_ACTION('resource_show')(
             {'ignore_auth': True}, {'id': resource['id']}
         )
         assert int(updated['activityinfo_auto_update_count']) == 0
@@ -332,7 +336,7 @@ class TestSyncAutoUpdatesCLIOutput:
             activityinfo_user=user_name,
         )
 
-        original_get_action = toolkit.get_action
+        original_get_action = _REAL_GET_ACTION
 
         def selective_mock(action_name):
             if action_name == 'act_info_update_resource_file':
@@ -368,7 +372,7 @@ class TestSyncAutoUpdatesCLIOutput:
         )
 
         calls = []
-        original_get_action = toolkit.get_action
+        original_get_action = _REAL_GET_ACTION
 
         def selective_mock(action_name):
             if action_name == 'act_info_update_resource_file':

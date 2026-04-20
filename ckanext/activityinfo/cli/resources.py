@@ -38,6 +38,8 @@ def update_activityinfo_resource(resource_id, user_name, verbose):
     try:
         download_activityinfo_resource(resource_id=resource_id, user=user_name)
         click.echo('ActivityInfo resource updated successfully')
+    except Exception as e:
+        raise click.ClickException(str(e))
     finally:
         download_logger.removeHandler(handler)
 

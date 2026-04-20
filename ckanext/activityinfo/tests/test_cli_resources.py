@@ -14,6 +14,10 @@ from ckanext.activityinfo.cli.resources import (
 )
 from ckanext.activityinfo.tests import factories
 
+# Captured BEFORE any @patch of toolkit.get_action so tests can call the real
+# action dispatcher without re-entering the mock (which causes recursion).
+_REAL_GET_ACTION = toolkit.get_action
+
 
 @pytest.fixture
 def setup_data():
@@ -168,7 +172,7 @@ class TestSyncAutoUpdatesCLI:
             activityinfo_user=user_name,
         )
 
-        original_get_action = toolkit.get_action
+        original_get_action = _REAL_GET_ACTION
         action_calls = []
 
         def selective_mock(action_name):
@@ -207,7 +211,7 @@ class TestSyncAutoUpdatesCLI:
             activityinfo_user=user_name,
         )
 
-        original_get_action = toolkit.get_action
+        original_get_action = _REAL_GET_ACTION
 
         def selective_mock(action_name):
             if action_name == 'act_info_update_resource_file':
@@ -238,7 +242,7 @@ class TestSyncAutoUpdatesCLI:
             activityinfo_user=user_name,
         )
 
-        original_get_action = toolkit.get_action
+        original_get_action = _REAL_GET_ACTION
 
         def selective_mock(action_name):
             if action_name == 'act_info_update_resource_file':
@@ -279,7 +283,7 @@ class TestSyncAutoUpdatesCLI:
         )
 
         users_called = []
-        original_get_action = toolkit.get_action
+        original_get_action = _REAL_GET_ACTION
 
         def selective_mock(action_name):
             if action_name == 'act_info_update_resource_file':
@@ -325,7 +329,7 @@ class TestSyncAutoUpdatesCLI:
         )
 
         call_count = [0]
-        original_get_action = toolkit.get_action
+        original_get_action = _REAL_GET_ACTION
 
         def selective_mock(action_name):
             if action_name == 'act_info_update_resource_file':
