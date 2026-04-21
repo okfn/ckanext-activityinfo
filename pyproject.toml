@@ -1,6 +1,6 @@
 [project]
 name = "ckanext-activityinfo"
-version = "0.2.3"
+version = "0.2.4"
 description = "A CKAN extension to connect with the ActivityInfo.org service"
 readme = "README.md"
 authors = [
