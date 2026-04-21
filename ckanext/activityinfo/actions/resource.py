@@ -1,12 +1,12 @@
 import logging
+from datetime import datetime, timezone
 
 from ckan.plugins import toolkit
 from ckanext.activityinfo.jobs.download import download_activityinfo_resource
+from ckanext.activityinfo.utils import VALID_AUTO_UPDATE_VALUES
 
 
 log = logging.getLogger(__name__)
-
-VALID_AUTO_UPDATE_VALUES = ('never', 'daily', 'weekly')
 
 
 def _validate_auto_update_fields(data_dict):
@@ -85,6 +85,13 @@ def resource_create(original_action, context, data_dict):
         resource_data['activityinfo_status'] = 'pending'
         resource_data['activityinfo_progress'] = 0
         resource_data['activityinfo_error'] = ''
+
+        # Store which user created this resource (for auto-update auth)
+        resource_data['activityinfo_user'] = user
+
+        # Set the timestamp so the first auto-update waits the full interval
+        resource_data['activityinfo_last_updated'] = datetime.now(timezone.utc).isoformat()
+        resource_data['activityinfo_auto_update_count'] = 0
 
         # Set name with format suffix if multiple formats
         if len(formats) > 1:

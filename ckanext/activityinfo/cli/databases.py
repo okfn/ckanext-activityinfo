@@ -1,6 +1,7 @@
 import logging
 import click
 from requests.exceptions import HTTPError
+from ckanext.activityinfo.cli.logs import setup_cli_logging
 from ckanext.activityinfo.data.base import ActivityInfoClient
 from ckanext.activityinfo.exceptions import ActivityInfoConnectionError
 
@@ -16,6 +17,8 @@ log = logging.getLogger(__name__)
 @click.option('-v', '--verbose', count=True)
 def get_activityinfo_databases_list(activityinfo_token, verbose):
     """ Get a list with all ActivityInfo databases for a user. """
+
+    handler, logger = setup_cli_logging(verbose)
 
     click.secho('Getting ActivityInfo databases')
     aic = ActivityInfoClient(api_key=activityinfo_token)
@@ -39,3 +42,4 @@ def get_activityinfo_databases_list(activityinfo_token, verbose):
             click.secho(f"  ownerId: {database.get('ownerId', 'N/A')}")
 
     click.secho(f'Total ActivityInfo databases: {total}')
+    logger.removeHandler(handler)

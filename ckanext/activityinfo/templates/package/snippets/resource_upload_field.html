@@ -111,6 +111,9 @@
         <input type="hidden" name="activityinfo_progress" value="{{ data.get('activityinfo_progress', 0) }}" />
         <input type="hidden" name="activityinfo_error" value="{{ data.get('activityinfo_error', '') }}" />
         <input type="hidden" name="activityinfo_format" value="{{ data.get('activityinfo_format', '') }}" />
+        <input type="hidden" name="activityinfo_last_updated" value="{{ data.get('activityinfo_last_updated', '') }}" />
+        <input type="hidden" name="activityinfo_auto_update_count" value="{{ data.get('activityinfo_auto_update_count', 0) }}" />
+        <input type="hidden" name="activityinfo_user" value="{{ data.get('activityinfo_user', '') }}" />
     {% else %}
         {# we only allow to clean and change upload for non-activityinfo resources #}
         {{ super() }}

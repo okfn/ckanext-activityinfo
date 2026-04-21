@@ -33,24 +33,64 @@ pip install git+https://github.com/okfn/ckanext-activityinfo@0.1.0#egg=ckanext-a
 
 Also, add `activityinfo` to the `ckan.plugins` setting in your CKAN config file.  
 
+## Automatic updates
+
+ActivityInfo resources can be configured to update automatically (daily or weekly) with a limited number of runs (1 to 20).
+These settings are available in the resource creation and edit forms.
+
+To enable automatic updates, you need to set up a cron job (or equivalent scheduler) that runs the `sync-auto-updates` CLI command periodically.
+The command checks all resources that are due for an update, enqueues background download jobs using each resource's original creator API key, and exits.
+
+### Cron
+
+As example.
+Run the sync command at a frequency that matches your shortest update interval. If you have daily resources, run it at least once a day:
+
+```bash
+# Run every 6 hours (covers both daily and weekly resources)
+0 */6 * * * /usr/bin/ckan -c /etc/ckan/production.ini activityinfo resources sync-auto-updates >> /var/log/ckan/activityinfo-sync.log 2>&1
+```
+
+### Yacron
+
+```yaml
+jobs:
+  - name: activityinfo-sync
+    command: ckan -c /etc/ckan/production.ini activityinfo resources sync-auto-updates
+    schedule: "0 */6 * * *"
+```
+
+### Options
+
+```bash
+# Preview what would be updated without actually running
+ckan activityinfo resources sync-auto-updates --dry-run
+
+# Enable verbose logging
+ckan activityinfo resources sync-auto-updates -v
+```
+
 ## Resource extra fields
 
 This extension adds the following resource extra fields to CKAN resources:
  - `activityinfo_form_id`: the ActivityInfo form ID
  - `activityinfo_database_id`: the ActivityInfo database ID
- - `activityinfo_status`: the download status (e.g. 'pending', 'in_progress', 'complete', 'error')
+ - `activityinfo_status`: the download status (`pending`, `exporting`, `downloading`, `complete`, `error`)
  - `activityinfo_progress`: the download progress (0-100)
  - `activityinfo_error`: any error message if the download failed
- - `activityinfo_format`: the format of the downloaded data (e.g. 'csv', 'xls')
+ - `activityinfo_format`: the format of the downloaded data (e.g. `csv`, `xlsx`)
  - `activityinfo_form_label`: the label of the ActivityInfo form
+ - `activityinfo_auto_update`: automatic update frequency (`never`, `daily`, `weekly`)
+ - `activityinfo_auto_update_runs`: how many times automatic updates should run (1-20)
+ - `activityinfo_last_updated`: ISO timestamp of the last automatic update
+ - `activityinfo_auto_update_count`: how many automatic updates have been completed so far
+ - `activityinfo_user`: the CKAN username who created the resource (used for automatic update authentication)
 
-You'll need to add them to `ckan.extra_resource_fields` to allow searching resources (action `resource_search`) by these fields.  
+You'll need to add them to `ckan.extra_resource_fields` in your CKAN config:
 
-```bash
-ckan.extra_resource_fields = activityinfo_form_id activityinfo_database_id activityinfo_form_label activityinfo_status
+```ini
+ckan.extra_resource_fields = activityinfo_form_id activityinfo_database_id activityinfo_form_label activityinfo_status activityinfo_progress activityinfo_error activityinfo_format activityinfo_auto_update activityinfo_auto_update_runs activityinfo_last_updated activityinfo_auto_update_count activityinfo_user
 ```
-
-You will get error is extra fields are not added to `ckan.extra_resource_fields` and you try to search resources by these fields. For example:
 
 
 ## Config settings

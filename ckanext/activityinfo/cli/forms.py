@@ -1,6 +1,7 @@
 import logging
 import click
 from requests.exceptions import HTTPError
+from ckanext.activityinfo.cli.logs import setup_cli_logging
 from ckanext.activityinfo.data.base import ActivityInfoClient
 from ckanext.activityinfo.exceptions import ActivityInfoConnectionError
 
@@ -18,6 +19,8 @@ log = logging.getLogger(__name__)
 @click.option('-v', '--verbose', count=True)
 def get_activityinfo_forms_list(activityinfo_token, database_id, include_sub_forms, verbose):
     """ Get a list with all forms and sub-forms in ActivityInfo. """
+
+    handler, logger = setup_cli_logging(verbose)
 
     click.secho('Getting ActivityInfo forms')
     aic = ActivityInfoClient(api_key=activityinfo_token)
@@ -51,3 +54,4 @@ def get_activityinfo_forms_list(activityinfo_token, database_id, include_sub_for
     total_sub_forms = len(forms.get('sub_forms', []))
 
     click.secho(f'Total ActivityInfo forms: {total_forms}, sub-forms: {total_sub_forms}')
+    logger.removeHandler(handler)
