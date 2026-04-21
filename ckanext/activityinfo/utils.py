@@ -215,6 +215,147 @@ def get_resources_due_for_auto_update():
     return due_resources
 
 
+def run_sync_auto_updates(dry_run=False):
+    """Find resources due for auto-update and enqueue download jobs.
+
+    Pure function with no CLI dependencies. Emits progress via ``log.info`` /
+    ``log.error``; pair with ``setup_cli_logging`` to get live CLI output, or
+    call from another extension (e.g. ckanext-unhcr) to log outcomes to a
+    system activity record.
+
+    Args:
+        dry_run: If True, do not enqueue jobs, just list what would be done.
+
+    Returns:
+        A summary dict:
+            {
+                'dry_run': bool,
+                'total_due': int,
+                'enqueued': int,
+                'failed': int,
+                'skipped': int,
+                'details': [ {resource_id, form_label, user, status, ...}, ... ],
+                'finished': bool,
+            }
+    """
+    summary = {
+        'dry_run': dry_run,
+        'total_due': 0,
+        'enqueued': 0,
+        'failed': 0,
+        'skipped': 0,
+        'details': [],
+        'finished': False,
+    }
+
+    log.info("Checking for ActivityInfo resources due for auto-update...")
+    due_resources = get_resources_due_for_auto_update()
+    summary['total_due'] = len(due_resources)
+
+    if not due_resources:
+        log.info("No resources due for update.")
+        summary['finished'] = True
+        return summary
+
+    log.info(f"Found {len(due_resources)} resource(s) due for update.")
+
+    if dry_run:
+        for res in due_resources:
+            count = res.get('activityinfo_auto_update_count', 0)
+            max_runs = res.get('activityinfo_auto_update_runs', 1)
+            user = res.get('activityinfo_user', '?')
+            log.info(
+                f"[DRY RUN] {res['id']} - "
+                f"{res.get('activityinfo_form_label', '?')} "
+                f"({res.get('activityinfo_auto_update')}, "
+                f"run {count}/{max_runs}, user: {user})"
+            )
+            summary['details'].append({
+                'resource_id': res['id'],
+                'form_label': res.get('activityinfo_form_label', '?'),
+                'user': user,
+                'status': 'dry-run',
+            })
+        summary['finished'] = True
+        return summary
+
+    for res in due_resources:
+        resource_id = res['id']
+        form_label = res.get('activityinfo_form_label', resource_id)
+        current_count = _safe_int(res.get('activityinfo_auto_update_count'), 0)
+        max_runs = _safe_int(res.get('activityinfo_auto_update_runs'), 1)
+        user_name = res.get('activityinfo_user')
+
+        if not user_name:
+            log.info(
+                f"Skipping: {form_label} ({resource_id}) "
+                f"- no activityinfo_user set"
+            )
+            summary['skipped'] += 1
+            summary['details'].append({
+                'resource_id': resource_id,
+                'form_label': form_label,
+                'status': 'skipped',
+                'reason': 'no activityinfo_user set',
+            })
+            continue
+
+        log.info(
+            f"Updating: {form_label} ({resource_id}) "
+            f"- run {current_count + 1}/{max_runs}, user: {user_name}"
+        )
+
+        try:
+            result = toolkit.get_action('act_info_update_resource_file')(
+                {'user': user_name, 'ignore_auth': True},
+                {'resource_id': resource_id}
+            )
+
+            # Update the counter and timestamp now that the job is enqueued.
+            # We count this as a run even if the background job later fails,
+            # to avoid infinite retries. Errors will be captured in the
+            # activityinfo_error resource extra field by the download job.
+            now_iso = datetime.now(timezone.utc).isoformat()
+            toolkit.get_action('resource_patch')(
+                {'user': user_name, 'ignore_auth': True},
+                {
+                    'id': resource_id,
+                    'activityinfo_last_updated': now_iso,
+                    'activityinfo_auto_update_count': current_count + 1,
+                }
+            )
+
+            job_id = result.get('job_id', '?')
+            log.info(
+                f"OK - job {job_id} enqueued "
+                f"(run {current_count + 1}/{max_runs})"
+            )
+            summary['enqueued'] += 1
+            summary['details'].append({
+                'resource_id': resource_id,
+                'form_label': form_label,
+                'user': user_name,
+                'status': 'enqueued',
+                'job_id': job_id,
+                'run': current_count + 1,
+                'max_runs': max_runs,
+            })
+
+        except Exception as e:
+            log.error(f"FAILED - {e}")
+            summary['failed'] += 1
+            summary['details'].append({
+                'resource_id': resource_id,
+                'form_label': form_label,
+                'user': user_name,
+                'status': 'failed',
+                'error': str(e),
+            })
+
+    summary['finished'] = True
+    return summary
+
+
 def _safe_int(value, default=0):
     """Safely convert a value to int, returning default on failure."""
     if value is None or value == '':
