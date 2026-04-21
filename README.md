@@ -89,7 +89,7 @@ This extension adds the following resource extra fields to CKAN resources:
 You'll need to add them to `ckan.extra_resource_fields` in your CKAN config:
 
 ```ini
-ckan.extra_resource_fields = activityinfo_form_id activityinfo_database_id activityinfo_form_label activityinfo_status activityinfo_auto_update activityinfo_auto_update_runs activityinfo_last_updated activityinfo_auto_update_count activityinfo_user
+ckan.extra_resource_fields = activityinfo_form_id activityinfo_database_id activityinfo_form_label activityinfo_status activityinfo_progress activityinfo_error activityinfo_format activityinfo_auto_update activityinfo_auto_update_runs activityinfo_last_updated activityinfo_auto_update_count activityinfo_user
 ```
 
 
