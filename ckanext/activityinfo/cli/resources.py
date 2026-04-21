@@ -1,25 +1,10 @@
-import logging
 from datetime import datetime, timezone
 
 import click
 from ckan.plugins import toolkit
 from ckanext.activityinfo.jobs.download import download_activityinfo_resource
+from ckanext.activityinfo.cli.logs import setup_cli_logging
 from ckanext.activityinfo.utils import get_resources_due_for_auto_update
-
-
-def _setup_download_logging(verbose=False):
-    """Set up a logging handler that forwards download logs to click.echo.
-
-    Returns (handler, logger) so the caller can remove the handler when done.
-    """
-    download_logger = logging.getLogger('ckanext.activityinfo.jobs.download')
-    handler = logging.Handler()
-    handler.emit = lambda record: click.echo(f"  {handler.format(record)}")
-    handler.setFormatter(logging.Formatter('%(message)s'))
-    handler.setLevel(logging.DEBUG if verbose else logging.INFO)
-    download_logger.addHandler(handler)
-    download_logger.setLevel(handler.level)
-    return handler, download_logger
 
 
 @click.command(
@@ -32,7 +17,7 @@ def _setup_download_logging(verbose=False):
 def update_activityinfo_resource(resource_id, user_name, verbose):
     """ Update a single ActivityInfo resource. """
 
-    handler, download_logger = _setup_download_logging(verbose)
+    handler, logger = setup_cli_logging(verbose)
 
     click.echo('Updating ActivityInfo resource')
     try:
@@ -40,8 +25,8 @@ def update_activityinfo_resource(resource_id, user_name, verbose):
         click.echo('ActivityInfo resource updated successfully')
     except Exception as e:
         raise click.ClickException(str(e))
-    finally:
-        download_logger.removeHandler(handler)
+
+    logger.removeHandler(handler)
 
 
 @click.command(
@@ -63,12 +48,15 @@ def sync_auto_updates(verbose, dry_run):
     Each resource is updated using the CKAN user who originally created it
     (stored in the activityinfo_user field).
     """
+    handler, logger = setup_cli_logging(verbose)
+
     click.echo("Checking for ActivityInfo resources due for auto-update...")
 
     due_resources = get_resources_due_for_auto_update()
 
     if not due_resources:
         click.echo("No resources due for update.")
+        logger.removeHandler(handler)
         return
 
     click.echo(f"Found {len(due_resources)} resource(s) due for update.")
@@ -84,6 +72,7 @@ def sync_auto_updates(verbose, dry_run):
                 f"({res.get('activityinfo_auto_update')}, "
                 f"run {count}/{max_runs}, user: {user})"
             )
+        logger.removeHandler(handler)
         return
 
     enqueued = 0
@@ -142,3 +131,4 @@ def sync_auto_updates(verbose, dry_run):
             continue
 
     click.echo(f"\nSync complete: {enqueued} enqueued, {failed} failed, {skipped} skipped.")
+    logger.removeHandler(handler)
