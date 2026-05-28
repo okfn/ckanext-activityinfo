@@ -73,6 +73,7 @@ def resource_create(original_action, context, data_dict):
 
         # Modify data_dict to use upload with placeholder
         resource_data['upload'] = ''
+        # DO NOT change this `activityinfo.waiting.` prefix
         resource_data['url'] = f'activityinfo.waiting.{format_type}'  # fake filename
         resource_data['url_type'] = ''  # The final job will move this to 'upload'
 
