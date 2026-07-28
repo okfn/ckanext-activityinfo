@@ -114,12 +114,13 @@ class ActivityInfoClient:
         Args:
             form_id (str): The ID of the current form (used for context/logging).
             element (dict): The reference field element from the form schema.
-                Must have type 'reference' and a 'range' array with formId entries.
+                Must have type 'reference' and a range array with formId
+                entries (in typeParameters.range in the real API).
         Returns:
             A dict with 'referencedFormId' and 'records' (list of records from the
             referenced form).
         """
-        range_list = element.get('range', [])
+        range_list = self._get_reference_range(element)
         if not range_list:
             log.warning(f"Reference field {element.get('id')} in form {form_id} has no range")
             return {'referencedFormId': None, 'records': []}
@@ -135,12 +136,98 @@ class ActivityInfoClient:
             'records': records
         }
 
+    @staticmethod
+    def _get_reference_range(element):
+        """
+        Get the range (list of {'formId': ...}) of a reference field element.
+        The real form tree API puts it inside typeParameters; accept a
+        top-level 'range' too for robustness.
+        """
+        type_parameters = element.get('typeParameters') or {}
+        return type_parameters.get('range') or element.get('range') or []
+
+    def _reference_field_columns(self, element, forms_data):
+        """
+        Build the export columns for a single reference field.
+
+        The stored value of a reference field is the auto-generated record ID
+        of the related record, so we always export that first. The
+        human-readable label ActivityInfo shows in table views is the
+        referenced form's key field(s), which can be coded anything, so we
+        resolve them dynamically from the referenced form's schema (already
+        present in the form tree).
+
+        Columns produced:
+        1. "<label> [Reference ID]": the raw record ID. Always available.
+        2. "<label> [KEY] <key label>": one per key field of the referenced
+           form. If the referenced form defines no key fields, fall back to
+           its first text field, mirroring ActivityInfo's own record
+           labeling chain (record label > key fields > first text field >
+           record ID).
+        3. "<label> [LABEL] <name label>": best-effort, only when the
+           referenced form has a non-key field coded 'name' or 'label'.
+        """
+        field_id = element.get('id')
+        label = element.get('label', field_id)
+        columns = [{
+            'id': field_id,
+            'label': f"{label} [Reference ID]",
+            'formula': field_id,
+            'translate': False
+        }]
+
+        range_list = self._get_reference_range(element)
+        ref_form_id = (range_list or [{}])[0].get('formId')
+        ref_schema = forms_data.get(ref_form_id, {}).get('schema', {})
+        ref_elements = ref_schema.get('elements', [])
+        if not ref_elements:
+            log.warning(
+                f"Referenced form {ref_form_id} for reference field {field_id} "
+                "not found in form tree, exporting the record ID only"
+            )
+
+        key_fields = [e for e in ref_elements if e.get('key')]
+        if not key_fields:
+            key_fields = [
+                e for e in ref_elements
+                if e.get('type', '').upper() in ('FREE_TEXT', 'TEXT')
+            ][:1]
+
+        for key_field in key_fields:
+            # Field codes are optional; field ids are valid formula symbols too
+            symbol = key_field.get('code') or key_field['id']
+            columns.append({
+                'id': f"{field_id}_{symbol}",
+                'label': f"{label} [KEY] {key_field.get('label', symbol)}",
+                'formula': f"{field_id}.{symbol}",
+                'translate': False
+            })
+
+        name_field = next(
+            (
+                e for e in ref_elements
+                if e not in key_fields and (e.get('code') or '').lower() in ('name', 'label')
+            ),
+            None
+        )
+        if name_field:
+            symbol = name_field.get('code') or name_field['id']
+            columns.append({
+                'id': f"{field_id}_{symbol}",
+                'label': f"{label} [LABEL] {name_field.get('label', symbol)}",
+                'formula': f"{field_id}.{symbol}",
+                'translate': False
+            })
+
+        return columns
+
     def get_form_columns(self, form_id):
         """
         Get the columns for a form to use in export requests.
         Fetches the form schema and builds the columns array from the elements.
-        For reference fields, uses dot notation (e.g. FIELD_ID.NAME) to export
-        the human-readable label instead of the raw record ID.
+        For reference fields, exports the raw record ID plus the referenced
+        form's key field(s) and, when available, a name-like label field,
+        using dot notation (see _reference_field_columns).
 
         Args:
             form_id (str): The ID of the form.
@@ -172,20 +259,7 @@ class ActivityInfoClient:
                     'translate': False
                 })
             elif element_type == 'reference':
-                # Raw reference ID column
-                columns.append({
-                    'id': field_id,
-                    'label': f"{label} [Reference ID]",
-                    'formula': field_id,
-                    'translate': False
-                })
-                # Human-readable name column
-                columns.append({
-                    'id': f"{field_id}_name",
-                    'label': label,
-                    'formula': f"{field_id}.NAME",
-                    'translate': False
-                })
+                columns.extend(self._reference_field_columns(element, forms_data))
             else:
                 columns.append({
                     'id': field_id,

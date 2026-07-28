@@ -1,3 +1,8 @@
+# 0.2.5 2026-07-28
+
+Fix for key fields in reference forms
+ - [#32](https://github.com/okfn/ckanext-activityinfo/pull/32)
+
 # 0.2.4 2026-04-21
 
 Allow syncing ActivityInfo forms

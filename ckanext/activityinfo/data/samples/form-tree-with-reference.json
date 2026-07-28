@@ -1,0 +1,136 @@
+{
+  "root": "cz94imfmrxhwf5ch",
+  "forms": {
+    "cz94imfmrxhwf5ch": {
+      "id": "cz94imfmrxhwf5ch",
+      "schema": {
+        "id": "cz94imfmrxhwf5ch",
+        "schemaVersion": 1,
+        "databaseId": "crcq4damrxhumij5",
+        "label": "RIDL",
+        "elements": [
+          {
+            "id": "cm1h9g7mrxhwqgyj",
+            "code": "rform",
+            "label": "Reference form",
+            "description": null,
+            "relevanceCondition": "",
+            "requiredCondition": "",
+            "validationCondition": "",
+            "required": false,
+            "type": "reference",
+            "typeParameters": {
+              "range": [
+                {
+                  "formId": "cyv476ymrxhvdy86"
+                }
+              ]
+            }
+          },
+          {
+            "id": "cmaemw5mrxhwwzyk",
+            "code": "text",
+            "label": "Text",
+            "description": null,
+            "relevanceCondition": "",
+            "requiredCondition": "",
+            "validationCondition": "",
+            "required": false,
+            "type": "FREE_TEXT",
+            "typeParameters": {
+              "barcode": false
+            }
+          }
+        ]
+      },
+      "schemaVersion": 1,
+      "permissions": {
+        "view": true,
+        "viewFilter": null,
+        "createRecord": true,
+        "createFilter": null,
+        "editRecord": true,
+        "editFilter": null,
+        "securityCategories": [
+          "reviewer"
+        ],
+        "deleteRecord": true,
+        "deleteFilter": null,
+        "bulkDelete": true,
+        "exportRecords": true,
+        "resolveDuplicates": true,
+        "manageImportConfigurations": true,
+        "updateSchema": true,
+        "collectionLinks": true,
+        "publicForm": false,
+        "locks": [],
+        "api": true,
+        "fieldLevelConditions": []
+      }
+    },
+    "cyv476ymrxhvdy86": {
+      "id": "cyv476ymrxhvdy86",
+      "schema": {
+        "id": "cyv476ymrxhvdy86",
+        "schemaVersion": 1,
+        "databaseId": "crcq4damrxhumij5",
+        "label": "Reference form",
+        "elements": [
+          {
+            "id": "cl1hfg4mrxhvkkm8",
+            "code": "code",
+            "label": "Code",
+            "description": null,
+            "relevanceCondition": "",
+            "requiredCondition": "",
+            "validationCondition": "",
+            "required": true,
+            "type": "FREE_TEXT",
+            "key": true,
+            "typeParameters": {
+              "barcode": false
+            }
+          },
+          {
+            "id": "c4ya22kmrxhvs4p9",
+            "code": "name",
+            "label": "name",
+            "description": null,
+            "relevanceCondition": "",
+            "requiredCondition": "",
+            "validationCondition": "",
+            "required": false,
+            "type": "FREE_TEXT",
+            "typeParameters": {
+              "barcode": false
+            }
+          }
+        ]
+      },
+      "schemaVersion": 1,
+      "permissions": {
+        "view": true,
+        "viewFilter": null,
+        "createRecord": true,
+        "createFilter": null,
+        "editRecord": true,
+        "editFilter": null,
+        "securityCategories": [
+          "reviewer"
+        ],
+        "deleteRecord": true,
+        "deleteFilter": null,
+        "bulkDelete": true,
+        "exportRecords": true,
+        "resolveDuplicates": true,
+        "manageImportConfigurations": true,
+        "updateSchema": true,
+        "collectionLinks": true,
+        "publicForm": false,
+        "locks": [],
+        "api": true,
+        "fieldLevelConditions": []
+      }
+    }
+  }
+}
