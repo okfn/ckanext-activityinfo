@@ -1,6 +1,11 @@
+import json
+from pathlib import Path
+
 import pytest
 import requests
 from ckanext.activityinfo.data.base import ActivityInfoClient
+
+SAMPLES_DIR = Path(__file__).parent.parent / "data" / "samples"
 
 
 # --- Simple requests mocker ---
@@ -259,30 +264,42 @@ def test_get_form_columns_uses_id_as_label_fallback(requests_mock_fixture, clien
     assert columns[0]["label"] == "field1"
 
 
+def _form_tree_response(form_id, elements, referenced_forms=None):
+    """Build a fake /tree/translated response for get_form_columns tests."""
+    forms = {form_id: {"schema": {"databaseId": "db1", "elements": elements}}}
+    for ref_form_id, ref_elements in (referenced_forms or {}).items():
+        forms[ref_form_id] = {"schema": {"databaseId": "db1", "elements": ref_elements}}
+    return {"forms": forms}
+
+
 def test_get_form_columns_reference_field(requests_mock_fixture, client):
-    """Reference fields should produce two columns: raw ID and human-readable name."""
+    """Reference fields export the record ID, the referenced form's key
+    field (resolved dynamically, whatever its code) and a name-like label
+    field when available."""
     form_id = "f1"
     url = f"https://www.activityinfo.org/resources/form/{form_id}/tree/translated"
-    fake_response = {
-        "forms": {
-            form_id: {
-                "schema": {
-                    "databaseId": "db1",
-                    "elements": [
-                        {"id": "field1", "label": "Name", "type": "text"},
-                        {
-                            "id": "ref1", "label": "ARG Province", "type": "reference",
-                            "range": [{"formId": "province_form"}]
-                        },
-                    ]
-                }
-            }
-        }
-    }
+    fake_response = _form_tree_response(
+        form_id,
+        [
+            {"id": "field1", "label": "Name", "type": "text"},
+            {
+                "id": "ref1", "label": "ARG Province", "type": "reference",
+                "typeParameters": {"range": [{"formId": "province_form"}]}
+            },
+        ],
+        referenced_forms={
+            "province_form": [
+                {"id": "pf1", "label": "Province code", "type": "FREE_TEXT",
+                 "code": "pcode", "key": True},
+                {"id": "pf2", "label": "Province name", "type": "FREE_TEXT",
+                 "code": "name"},
+            ]
+        },
+    )
     requests_mock_fixture.get(url, json=fake_response)
     columns = client.get_form_columns(form_id)
 
-    assert len(columns) == 3
+    assert len(columns) == 4
     # Regular field
     assert columns[0] == {
         "id": "field1", "label": "Name", "formula": "field1", "translate": False
@@ -292,10 +309,146 @@ def test_get_form_columns_reference_field(requests_mock_fixture, client):
         "id": "ref1", "label": "ARG Province [Reference ID]",
         "formula": "ref1", "translate": False
     }
-    # Reference NAME column
+    # Key field column, resolved from the referenced form's schema
     assert columns[2] == {
-        "id": "ref1_name", "label": "ARG Province",
-        "formula": "ref1.NAME", "translate": False
+        "id": "ref1_pcode", "label": "ARG Province [KEY] Province code",
+        "formula": "ref1.pcode", "translate": False
+    }
+    # Best-effort label column from the name-coded field
+    assert columns[3] == {
+        "id": "ref1_name", "label": "ARG Province [LABEL] Province name",
+        "formula": "ref1.name", "translate": False
+    }
+
+
+def test_get_form_columns_reference_composite_key(requests_mock_fixture, client):
+    """A referenced form with a composite key exports one column per key
+    field; a key field without a code falls back to its field id."""
+    form_id = "f1"
+    url = f"https://www.activityinfo.org/resources/form/{form_id}/tree/translated"
+    fake_response = _form_tree_response(
+        form_id,
+        [
+            {
+                "id": "ref1", "label": "Site", "type": "reference",
+                "typeParameters": {"range": [{"formId": "site_form"}]}
+            },
+        ],
+        referenced_forms={
+            "site_form": [
+                {"id": "sf1", "label": "Region", "type": "FREE_TEXT",
+                 "code": "region", "key": True},
+                {"id": "sf2", "label": "Site number", "type": "FREE_TEXT",
+                 "key": True},  # no code: formula must use the field id
+            ]
+        },
+    )
+    requests_mock_fixture.get(url, json=fake_response)
+    columns = client.get_form_columns(form_id)
+
+    assert len(columns) == 3
+    assert columns[1] == {
+        "id": "ref1_region", "label": "Site [KEY] Region",
+        "formula": "ref1.region", "translate": False
+    }
+    assert columns[2] == {
+        "id": "ref1_sf2", "label": "Site [KEY] Site number",
+        "formula": "ref1.sf2", "translate": False
+    }
+
+
+def test_get_form_columns_reference_no_key_fields(requests_mock_fixture, client):
+    """A referenced form without key fields falls back to its first text
+    field, mirroring ActivityInfo's record labeling chain."""
+    form_id = "f1"
+    url = f"https://www.activityinfo.org/resources/form/{form_id}/tree/translated"
+    fake_response = _form_tree_response(
+        form_id,
+        [
+            {
+                "id": "ref1", "label": "Partner", "type": "reference",
+                "typeParameters": {"range": [{"formId": "partner_form"}]}
+            },
+        ],
+        referenced_forms={
+            "partner_form": [
+                {"id": "qf1", "label": "Budget", "type": "quantity"},
+                {"id": "tf1", "label": "Partner name", "type": "FREE_TEXT",
+                 "code": "pname"},
+            ]
+        },
+    )
+    requests_mock_fixture.get(url, json=fake_response)
+    columns = client.get_form_columns(form_id)
+
+    assert len(columns) == 2
+    assert columns[1] == {
+        "id": "ref1_pname", "label": "Partner [KEY] Partner name",
+        "formula": "ref1.pname", "translate": False
+    }
+
+
+def test_get_form_columns_real_captured_form_tree(requests_mock_fixture, client):
+    """Run get_form_columns against a real captured /tree/translated
+    response (samples/form-tree-with-reference.json). This locks in the
+    true API shape: the reference range lives in typeParameters.range and
+    the referenced form's schema is present in the tree with key: true on
+    its Code field. Verified against a live CSV export on 2026-07-28."""
+    sample = json.loads((SAMPLES_DIR / "form-tree-with-reference.json").read_text())
+    form_id = sample["root"]
+    url = f"https://www.activityinfo.org/resources/form/{form_id}/tree/translated"
+    requests_mock_fixture.get(url, json=sample)
+    columns = client.get_form_columns(form_id)
+
+    assert columns == [
+        {
+            "id": "cm1h9g7mrxhwqgyj",
+            "label": "Reference form [Reference ID]",
+            "formula": "cm1h9g7mrxhwqgyj",
+            "translate": False,
+        },
+        {
+            "id": "cm1h9g7mrxhwqgyj_code",
+            "label": "Reference form [KEY] Code",
+            "formula": "cm1h9g7mrxhwqgyj.code",
+            "translate": False,
+        },
+        {
+            "id": "cm1h9g7mrxhwqgyj_name",
+            "label": "Reference form [LABEL] name",
+            "formula": "cm1h9g7mrxhwqgyj.name",
+            "translate": False,
+        },
+        {
+            "id": "cmaemw5mrxhwwzyk",
+            "label": "Text",
+            "formula": "cmaemw5mrxhwwzyk",
+            "translate": False,
+        },
+    ]
+
+
+def test_get_form_columns_reference_form_missing_from_tree(requests_mock_fixture, client):
+    """If the referenced form is not in the tree, only the record ID column
+    is exported. The old ref1.NAME formula must not come back."""
+    form_id = "f1"
+    url = f"https://www.activityinfo.org/resources/form/{form_id}/tree/translated"
+    fake_response = _form_tree_response(
+        form_id,
+        [
+            {
+                "id": "ref1", "label": "ARG Province", "type": "reference",
+                "typeParameters": {"range": [{"formId": "province_form"}]}
+            },
+        ],
+    )
+    requests_mock_fixture.get(url, json=fake_response)
+    columns = client.get_form_columns(form_id)
+
+    assert len(columns) == 1
+    assert columns[0] == {
+        "id": "ref1", "label": "ARG Province [Reference ID]",
+        "formula": "ref1", "translate": False
     }
 
 
@@ -313,7 +466,7 @@ def test_get_form_columns_multiselectreference_field(requests_mock_fixture, clie
                         {
                             "id": "mref1", "label": "Brasil Provinces",
                             "type": "multiselectreference",
-                            "range": [{"formId": "br_province_form"}]
+                            "typeParameters": {"range": [{"formId": "br_province_form"}]}
                         },
                     ]
                 }
@@ -332,38 +485,38 @@ def test_get_form_columns_multiselectreference_field(requests_mock_fixture, clie
 
 def test_get_form_columns_mixed_fields(requests_mock_fixture, client):
     """Test a form with text, reference, and multiselectreference fields together.
-    Mirrors the real CSV structure: reference gets ID + name columns,
+    Mirrors the real CSV structure: reference gets ID + key columns,
     multiselectreference gets only an ID column."""
     form_id = "f1"
     url = f"https://www.activityinfo.org/resources/form/{form_id}/tree/translated"
-    fake_response = {
-        "forms": {
-            form_id: {
-                "schema": {
-                    "databaseId": "db1",
-                    "elements": [
-                        {"id": "name", "label": "Name of tools", "type": "FREE_TEXT"},
-                        {"id": "year", "label": "Year", "type": "quantity"},
-                        {
-                            "id": "mref1", "label": "Multi ref brasil province",
-                            "type": "multiselectreference",
-                            "range": [{"formId": "br_form"}]
-                        },
-                        {"id": "comment", "label": "Comment", "type": "FREE_TEXT"},
-                        {
-                            "id": "ref1", "label": "ARG Province",
-                            "type": "reference",
-                            "range": [{"formId": "arg_form"}]
-                        },
-                    ]
-                }
-            }
-        }
-    }
+    fake_response = _form_tree_response(
+        form_id,
+        [
+            {"id": "name", "label": "Name of tools", "type": "FREE_TEXT"},
+            {"id": "year", "label": "Year", "type": "quantity"},
+            {
+                "id": "mref1", "label": "Multi ref brasil province",
+                "type": "multiselectreference",
+                "typeParameters": {"range": [{"formId": "br_form"}]}
+            },
+            {"id": "comment", "label": "Comment", "type": "FREE_TEXT"},
+            {
+                "id": "ref1", "label": "ARG Province",
+                "type": "reference",
+                "typeParameters": {"range": [{"formId": "arg_form"}]}
+            },
+        ],
+        referenced_forms={
+            "arg_form": [
+                {"id": "af1", "label": "Province code", "type": "FREE_TEXT",
+                 "code": "pcode", "key": True},
+            ]
+        },
+    )
     requests_mock_fixture.get(url, json=fake_response)
     columns = client.get_form_columns(form_id)
 
-    # 3 regular + 1 multiref (ID only) + 1 ref (ID + name) = 6
+    # 3 regular + 1 multiref (ID only) + 1 ref (ID + key) = 6
     assert len(columns) == 6
     assert columns[0]["formula"] == "name"
     assert columns[1]["formula"] == "year"
@@ -372,8 +525,8 @@ def test_get_form_columns_mixed_fields(requests_mock_fixture, client):
     assert columns[3]["formula"] == "comment"
     assert columns[4]["formula"] == "ref1"
     assert columns[4]["label"] == "ARG Province [Reference ID]"
-    assert columns[5]["formula"] == "ref1.NAME"
-    assert columns[5]["label"] == "ARG Province"
+    assert columns[5]["formula"] == "ref1.pcode"
+    assert columns[5]["label"] == "ARG Province [KEY] Province code"
 
 
 def test_start_job_download_form_data(requests_mock_fixture, client):
